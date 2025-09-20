@@ -5,9 +5,9 @@ import { mockClubs } from '../data/mockData';
 import ClubCard from './ClubCard';
 import Header from './Header';
 
+// Updated categories to reflect the new, focused list of clubs
 const categories = [
-  'All', 'Technical', 'Cultural', 'Sports', 'Professional Development', 
-  'Community Service', 'Innovation', 'Arts', 'Special Interest'
+  'All', 'Technical', 'Cultural', 'Arts', 'Community Service', 'Special Interest'
 ];
 
 const StudentDashboard: React.FC = () => {
@@ -45,7 +45,7 @@ const StudentDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <Header userRole="student" userName="John Doe" />
+      <Header userRole="student" userName="Vachan U S" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
@@ -104,7 +104,9 @@ const StudentDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">New This Month</p>
-                <p className="text-3xl font-bold text-purple-600">5</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {mockClubs.filter(c => new Date(c.createdAt) > new Date(new Date().setMonth(new Date().getMonth() - 1))).length}
+                </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                 <Clock className="h-6 w-6 text-purple-600" />

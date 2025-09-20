@@ -43,22 +43,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
 
   const testimonials = [
     {
-      name: 'Ankit Sharma',
-      role: 'Captain, SAE BAJA Motorsports',
+      name: 'Ajay',
+      role: 'Head, Fashion Club',
       image: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=face',
-      quote: 'Dr. AIT ClubHubs was a game-changer for managing our 50-member team. Coordinating sub-teams and tracking our build progress for the national competition became seamless.'
+      quote: 'Dr. AIT ClubHubs helped us organize our annual fashion show flawlessly. From managing model auditions to coordinating with designers, the platform kept everything on track.'
     },
     {
-      name: 'Priya Singh',
-      role: 'Member, AI & ML Club',
+      name: 'Riya',
+      role: 'Lead Choreographer, Dance Club',
       image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop&crop=face',
-      quote: 'I found a project on real-time data analysis through the AI club on Dr. AIT ClubHubs. It was the highlight of my resume and helped me land a fantastic internship!'
+      quote: 'As a dance troupe, we have hectic practice schedules. The meeting scheduler on ClubHubs is a lifesaver! It helps us book practice halls and inform all members instantly.'
     },
     {
-      name: 'Rahul Desai',
-      role: 'Coordinator, Entrepreneurship Cell',
+      name: 'Rohan',
+      role: 'Lead Guitarist, Music Club',
       image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
-      quote: 'Organizing our annual startup conclave with over 20+ speakers was a breeze. The announcement and scheduling features are incredibly powerful.'
+      quote: "We used the announcements feature to promote our 'Battle of the Bands' event. The reach was amazing, and we had a full house! It's the best tool for campus outreach."
     }
   ];
 
@@ -369,7 +369,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm">
-            <p>© 2025 Dr. AIT ClubHubs. All Rights Reserved. Built with Dualite Alpha.</p>
+            <p>School clubs are all about growth—join to explore new interests, participate to build skills, and evolve into a better version of yourself while connecting with like-minded peers and creating lasting memories</p>
           </div>
         </div>
       </footer>
