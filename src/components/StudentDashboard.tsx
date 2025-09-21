@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, PlusCircle, User, Compass, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserData } from '../context/UserDataContext';
+import { useAppData } from '../context/AppDataContext';
+import { useToast } from '../context/ToastContext';
 import ClubCard from './ClubCard';
 import Header from './Header';
 import RequestClubModal from './RequestClubModal';
@@ -9,33 +11,66 @@ import StudentProfile from './StudentProfile';
 import RecommendedClubs from './RecommendedClubs';
 import Leaderboards from './Leaderboards';
 import OnboardingModal from './OnboardingModal';
+import { ClubMember } from '../types';
 
-const categories = ['All', 'Technical', 'Cultural', 'Arts', 'Community Service', 'Special Interest'];
+const categories = ['All', 'Technical', 'Cultural', 'Arts', 'Community Service', 'Special Interest', 'Sports'];
 
 const ClubExplorer: React.FC = () => {
-    const { clubs } = useUserData();
+    const { clubs, users, clubMembers, setClubMembers } = useUserData();
+    const { setNotifications } = useAppData();
+    const { showToast } = useToast();
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
+    const studentUser = users.find(u => u.role === 'student');
+
     const filteredClubs = clubs
         .filter(club => {
             const matchesSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 club.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                club.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                                (club.tags && club.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
             const matchesCategory = selectedCategory === 'All' || club.category === selectedCategory;
             return matchesSearch && matchesCategory;
         });
 
     const handleJoinClub = (clubId: string) => {
         const club = clubs.find(c => c.id === clubId);
-        alert(`Join request sent for ${club?.name}!`);
+        if (!club || !studentUser) return;
+
+        const existingRequest = clubMembers.find(m => m.userId === studentUser.id && m.clubId === clubId);
+        if (existingRequest) {
+            showToast(`You have already sent a request to ${club.name}.`, "info");
+            return;
+        }
+
+        const newRequest: ClubMember = {
+            id: crypto.randomUUID(),
+            clubId: clubId,
+            userId: studentUser.id,
+            userName: studentUser.name,
+            userEmail: studentUser.email,
+            status: 'pending',
+            joinedAt: new Date().toISOString(),
+        };
+
+        setClubMembers(prev => [...prev, newRequest]);
+        showToast(`Your request to join ${club.name} has been sent!`, 'success');
+        
+        // Notify the club leader (in a real app, this would be targeted)
+        setNotifications(prev => [{
+            id: crypto.randomUUID(),
+            content: `${studentUser.name} has requested to join ${club.name}.`,
+            createdAt: new Date().toISOString(),
+            read: false
+        }, ...prev]);
     };
     
     const handleRequestSubmit = (details: { name: string; category: string; description: string }) => {
         console.log('New club request:', details);
-        alert(`Your request to create the "${details.name}" club has been submitted for review!`);
+        showToast(`Your request for "${details.name}" has been submitted!`, 'success');
         setIsRequestModalOpen(false);
     };
 

@@ -1,5 +1,7 @@
-import { faker } from '@faker-js/faker';
+import { Faker, en_IN, en } from '@faker-js/faker';
 import { Club, User, ClubMember, Announcement, MeetingSchedule, Notification, GalleryImage, Testimonial, Achievement, ImpactStat } from '../types';
+
+const faker = new Faker({ locale: [en_IN, en] });
 
 const clubNames = [
   'Fashion & Design Society',
@@ -139,15 +141,17 @@ export const mockClubs: Club[] = clubNames.map((name, index) => {
   };
 });
 
-export const mockClubMembers: ClubMember[] = Array.from({ length: 50 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
+export const mockClubMembers: ClubMember[] = Array.from({ length: 50 }, (_, index) => {
+  const user = faker.helpers.arrayElement(mockUsers.filter(u => u.role === 'student'));
+  // Create a few pending requests for testing
+  const status = index < 5 ? 'pending' : faker.helpers.arrayElement(['active', 'inactive']);
   return {
     id: faker.string.uuid(),
     clubId: faker.helpers.arrayElement(mockClubs).id,
     userId: user.id,
     userName: user.name,
     userEmail: user.email,
-    status: faker.helpers.arrayElement(['active', 'pending', 'inactive']),
+    status,
     joinedAt: faker.date.past().toISOString()
   };
 });

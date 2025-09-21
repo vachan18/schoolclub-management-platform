@@ -6,6 +6,7 @@ import NotificationPanel from './NotificationPanel';
 import { useAppData } from '../context/AppDataContext';
 import { useSoundEffect } from '../hooks/useSoundEffect';
 import { useNotificationSound } from '../hooks/useNotificationSound';
+import LanguageSelector from './LanguageSelector';
 
 interface HeaderProps {
   userRole?: 'student' | 'leader' | 'admin';
@@ -88,7 +89,8 @@ const Header: React.FC<HeaderProps> = ({ userRole, userName, onMenuClick }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <LanguageSelector />
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setIsPanelOpen(prev => !prev)}

@@ -1,0 +1,11 @@
+{
+  "hero": {
+    "title": "Construire. Innover. Diriger.",
+    "subtitle": "Le hub central pour toutes les activités étudiantes au Dr. AIT. Découvrez des clubs, gérez des équipes et collaborez sur des projets novateurs."
+  },
+  "roles": {
+    "student": "Je suis un étudiant",
+    "leader": "Je suis un chef de club",
+    "admin": "Gestion du site"
+  }
+}

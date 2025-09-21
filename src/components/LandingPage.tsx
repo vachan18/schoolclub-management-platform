@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Shield, BookOpen, Star, ChevronRight, Sparkles, Trophy, Heart, Facebook, Youtube, Linkedin, Instagram, Twitter, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Users, Shield, BookOpen, Star, ChevronRight, Sparkles, Trophy, Heart, Facebook, Youtube, Linkedin, Instagram, Twitter, Phone, Settings } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useAppData } from '../context/AppDataContext';
 import AnimatedCounter from './AnimatedCounter';
@@ -17,6 +18,7 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
+  const { t } = useTranslation();
   const { testimonials, impactStats, siteLogo } = useAppData();
   const playLogoSound = useSoundEffect();
   const heroRef = useRef(null);
@@ -100,26 +102,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div style={{ y: heroTextY, opacity: heroOpacity }} className="text-center text-white p-4">
             <motion.h1 className="text-5xl md:text-7xl font-bold mb-6 drop-shadow-xl" variants={itemVariants}>
-              Build. Innovate. <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Lead.</span>
+              {t('hero.title')}
             </motion.h1>
             <motion.p className="text-xl text-gray-200 max-w-3xl mx-auto mb-12 drop-shadow-lg" variants={itemVariants}>
-              The central hub for all student activities at Dr. AIT. Discover clubs, manage teams, and collaborate on groundbreaking projects.
+              {t('hero.subtitle')}
             </motion.p>
             <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl cursor-pointer" onClick={() => onRoleSelect('student')}>
                 <Users className="h-8 w-8 text-blue-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">I'm a Student</h3>
+                <h3 className="text-xl font-bold mb-2">{t('roles.student')}</h3>
                 <p>Explore clubs & join projects.</p>
               </motion.div>
               <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl cursor-pointer" onClick={() => onRoleSelect('leader')}>
                 <Shield className="h-8 w-8 text-green-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">I'm a Club Leader</h3>
+                <h3 className="text-xl font-bold mb-2">{t('roles.leader')}</h3>
                 <p>Manage your team & events.</p>
               </motion.div>
-              <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl cursor-pointer" onClick={() => onRoleSelect('leader')}>
-                <BookOpen className="h-8 w-8 text-orange-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">Manage a Club</h3>
-                <p>Edit details, logo & more.</p>
+              <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl cursor-pointer" onClick={() => onRoleSelect('admin')}>
+                <Settings className="h-8 w-8 text-orange-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">{t('roles.admin')}</h3>
+                <p>Edit content, themes & more.</p>
               </motion.div>
             </motion.div>
           </motion.div>

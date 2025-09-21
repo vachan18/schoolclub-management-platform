@@ -1,0 +1,11 @@
+{
+  "hero": {
+    "title": "Build. Innovate. Lead.",
+    "subtitle": "The central hub for all student activities at Dr. AIT. Discover clubs, manage teams, and collaborate on groundbreaking projects."
+  },
+  "roles": {
+    "student": "I'm a Student",
+    "leader": "I'm a Club Leader",
+    "admin": "Site Management"
+  }
+}

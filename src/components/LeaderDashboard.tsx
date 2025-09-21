@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Users, Calendar, Bell, Settings, Edit3, Trash2, Moon, Sun, Save, XCircle, Twitter, Linkedin, Globe, Image as ImageIcon, User, UploadCloud } from 'lucide-react';
+import { Plus, Users, Calendar, Bell, Settings, Edit3, Trash2, Moon, Sun, Save, XCircle, Twitter, Linkedin, Globe, Image as ImageIcon, User, UploadCloud, Check, X, MailOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { useUserData } from '../context/UserDataContext';
+import { useAppData } from '../context/AppDataContext';
 import { useToast } from '../context/ToastContext';
 import Header from './Header';
 import { Club, ClubMember, Announcement, MeetingSchedule, User as UserType } from '../types';
@@ -38,6 +39,7 @@ const SaveChangesBar: React.FC<{ onSave: () => void; onDiscard: () => void; }> =
 
 const LeaderDashboard: React.FC = () => {
   const { clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, users } = useUserData();
+  const { setNotifications } = useAppData();
   const { showToast } = useToast();
   
   const leaderClubs = useMemo(() => clubs, [clubs]);
@@ -141,12 +143,49 @@ const LeaderDashboard: React.FC = () => {
     setItemToDelete(null);
   };
   
+  const handleAcceptRequest = (memberId: string) => {
+    setEditedData((prev: any) => ({
+      ...prev,
+      members: prev.members.map((m: ClubMember) => m.id === memberId ? { ...m, status: 'active' } : m)
+    }));
+    const member = editedData.members.find((m: ClubMember) => m.id === memberId);
+    if(member) {
+      showToast(`${member.userName} accepted into the club.`, 'success');
+      setNotifications(prev => [{
+        id: crypto.randomUUID(),
+        content: `Your request to join "${editedData.clubDetails.name}" has been approved!`,
+        createdAt: new Date().toISOString(),
+        read: false
+      }, ...prev]);
+    }
+  };
+
+  const handleDeclineRequest = (memberId: string) => {
+    const member = editedData.members.find((m: ClubMember) => m.id === memberId);
+    setEditedData((prev: any) => ({
+      ...prev,
+      members: prev.members.filter((m: ClubMember) => m.id !== memberId)
+    }));
+    if(member) {
+      showToast(`${member.userName}'s request has been declined.`, 'info');
+      setNotifications(prev => [{
+        id: crypto.randomUUID(),
+        content: `Your request to join "${editedData.clubDetails.name}" has been declined.`,
+        createdAt: new Date().toISOString(),
+        read: false
+      }, ...prev]);
+    }
+  };
+
+  const pendingRequestCount = editedData?.members.filter((m: ClubMember) => m.status === 'pending').length || 0;
+
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'members', label: 'Members' },
-    { id: 'announcements', label: 'Announcements' },
-    { id: 'meetings', label: 'Meetings' },
-    { id: 'settings', label: 'Settings' },
+    { id: 'overview', label: 'Overview', icon: Users },
+    { id: 'members', label: 'Members', icon: Users },
+    { id: 'requests', label: 'Requests', icon: MailOpen, count: pendingRequestCount },
+    { id: 'announcements', label: 'Announcements', icon: Bell },
+    { id: 'meetings', label: 'Meetings', icon: Calendar },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const renderContent = () => {
@@ -156,10 +195,11 @@ const LeaderDashboard: React.FC = () => {
 
     switch (selectedTab) {
       case 'overview': return <ClubAnalytics members={members} meetings={meetings} />;
+      case 'requests': return <RequestsTab members={members} onAccept={handleAcceptRequest} onDecline={handleDeclineRequest} />;
       case 'members': return (
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Members ({members.length})</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Members ({members.filter((m: ClubMember) => m.status === 'active').length})</h2>
             <button onClick={() => { setEditingMember(null); setIsMemberModalOpen(true); }} className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               <Plus className="h-4 w-4" /><span>Add Member</span>
             </button>
@@ -175,11 +215,11 @@ const LeaderDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {members.map((member: ClubMember) => (
+                {members.filter((m: ClubMember) => m.status === 'active').map((member: ClubMember) => (
                   <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{member.userName}</td>
                     <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{member.userEmail}</td>
-                    <td className="py-3 px-4"><span className={`px-2 py-1 text-xs rounded-full capitalize ${member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'}`}>{member.status}</span></td>
+                    <td className="py-3 px-4"><span className={`px-2 py-1 text-xs rounded-full capitalize bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300`}>{member.status}</span></td>
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">
                         <button onClick={() => { setEditingMember(member); setIsMemberModalOpen(true); }} className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600"><Edit3 className="h-4 w-4" /></button>
@@ -283,7 +323,15 @@ const LeaderDashboard: React.FC = () => {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sticky top-28 border border-gray-200 dark:border-gray-700">
               <nav className="space-y-1">
-                {tabs.map(tab => (<button key={tab.id} onClick={() => setSelectedTab(tab.id)} className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm font-medium text-left rounded-md transition-colors ${selectedTab === tab.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}><span>{tab.label}</span></button>))}
+                {tabs.map(tab => (<button key={tab.id} onClick={() => setSelectedTab(tab.id)} className={`w-full flex items-center justify-between space-x-3 px-3 py-2.5 text-sm font-medium text-left rounded-md transition-colors ${selectedTab === tab.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+                  <div className="flex items-center space-x-3">
+                    <tab.icon className="h-5 w-5" />
+                    <span>{tab.label}</span>
+                  </div>
+                  {tab.count && tab.count > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">{tab.count}</span>
+                  )}
+                </button>))}
               </nav>
             </div>
           </motion.div>
@@ -309,6 +357,49 @@ const LeaderDashboard: React.FC = () => {
       <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} onSave={handleSaveMeeting} meetingToEdit={editingMeeting}/>
       <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleConfirmDelete} itemName={itemToDelete?.type}/>
     </motion.div>
+  );
+};
+
+const RequestsTab: React.FC<{
+  members: ClubMember[],
+  onAccept: (memberId: string) => void,
+  onDecline: (memberId: string) => void
+}> = ({ members, onAccept, onDecline }) => {
+  const pendingMembers = members.filter(m => m.status === 'pending');
+
+  if (pendingMembers.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+        <MailOpen className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+        <h3 className="text-lg font-semibold">No Pending Requests</h3>
+        <p>You're all caught up! There are no new requests to join your club.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Join Requests ({pendingMembers.length})</h2>
+      <div className="space-y-4">
+        {pendingMembers.map(member => (
+          <div key={member.id} className="p-4 border dark:border-gray-700 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-gray-800 shadow-sm">
+            <div>
+              <p className="font-bold text-gray-900 dark:text-white">{member.userName}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{member.userEmail}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Requested on: {new Date(member.joinedAt).toLocaleDateString()}</p>
+            </div>
+            <div className="flex space-x-3 mt-4 sm:mt-0">
+              <button onClick={() => onDecline(member.id)} className="px-4 py-2 text-sm font-medium rounded-md bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 flex items-center space-x-2">
+                <X className="h-4 w-4" /><span>Decline</span>
+              </button>
+              <button onClick={() => onAccept(member.id)} className="px-4 py-2 text-sm font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900 flex items-center space-x-2">
+                <Check className="h-4 w-4" /><span>Accept</span>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
