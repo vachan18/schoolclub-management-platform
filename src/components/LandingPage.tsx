@@ -74,8 +74,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
               style={{ perspective: '1000px' }}
             >
               <Link to="/" className="flex items-center space-x-4">
+                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-16 w-16 object-contain" />}
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-red-600 bg-clip-text text-transparent">Dr. AIT ClubHubs</h1>
-                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-12 w-12 object-contain" />}
               </Link>
             </motion.div>
             <nav className="hidden md:flex space-x-2">
@@ -196,8 +196,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Start Your Journey?</h2>
               <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">Join a vibrant community of creators, builders, and leaders today.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onRoleSelect('student')} className="px-8 py-3 bg-white text-primary font-semibold rounded-lg shadow-lg">Find Your Club</motion.button>
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onRoleSelect('leader')} className="px-8 py-3 border-2 border-white font-semibold rounded-lg">Manage Your Team</motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onRoleSelect('student')} className="inline-flex items-center justify-center px-8 py-4 bg-white text-primary font-bold text-lg rounded-lg shadow-xl">
+                  <span>Find Your Club</span>
+                  <ChevronRight className="h-6 w-6 ml-2" />
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onRoleSelect('leader')} className="px-8 py-4 border-2 border-white font-semibold text-lg rounded-lg">Manage Your Team</motion.button>
               </div>
             </motion.div>
           </div>
@@ -229,9 +232,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
               </div>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm">
-            <p>&copy; 2025 Dr. AIT ClubHubs. All rights reserved.</p>
-            <p className="mt-2 text-xs">Want to customize this platform? <a href="#" onClick={() => onRoleSelect('admin')} className="text-blue-400 hover:underline">Admin Login</a></p>
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center">
+            <p className="text-2xl font-bold text-white tracking-wider">Innovate, Elevate, Lead</p>
+            <p className="mt-4 text-xs text-gray-500">Want to customize this platform? <a href="#" onClick={() => onRoleSelect('admin')} className="text-blue-400 hover:underline">Admin Login</a></p>
           </div>
         </div>
       </footer>

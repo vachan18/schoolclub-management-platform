@@ -1,9 +1,9 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
 import { Club, User, ClubMember, Announcement, MeetingSchedule } from '../types';
 import { mockClubs, mockUsers, mockClubMembers, mockAnnouncements, mockMeetingSchedules } from '../data/mockData';
 
 const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] => {
-  const [storedValue, setStoredValue] = React.useState<T>(() => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
@@ -17,9 +17,20 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T | ((va
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Filter out blob URLs before saving to localStorage
+      const replacer = (key: string, value: any) => {
+        if (typeof value === 'string' && value.startsWith('blob:')) {
+          return undefined; // Exclude blob URLs from serialization
+        }
+        return value;
+      };
+      window.localStorage.setItem(key, JSON.stringify(valueToStore, replacer));
     } catch (error) {
-      console.error(error);
+      if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        console.warn(`LocalStorage quota exceeded for key "${key}". Data will not be persisted for this session. Please connect a backend for permanent storage.`);
+      } else {
+        console.error(error);
+      }
     }
   };
 

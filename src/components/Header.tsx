@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Search, Bell, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Notification } from '../types';
-import { mockNotifications } from '../data/mockData';
 import NotificationPanel from './NotificationPanel';
 import { useAppData } from '../context/AppDataContext';
 import { useSoundEffect } from '../hooks/useSoundEffect';
+import { useNotificationSound } from '../hooks/useNotificationSound';
 
 interface HeaderProps {
   userRole?: 'student' | 'leader' | 'admin';
@@ -15,13 +14,22 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ userRole, userName, onMenuClick }) => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const { siteLogo, notifications, setNotifications } = useAppData();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const { siteLogo } = useAppData();
   const playLogoSound = useSoundEffect();
+  const playNotificationSound = useNotificationSound();
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
+
+  useEffect(() => {
+    if (unreadCount > prevUnreadCount) {
+      playNotificationSound();
+    }
+    setPrevUnreadCount(unreadCount);
+  }, [unreadCount, prevUnreadCount, playNotificationSound]);
+
 
   const handleMarkAllRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
@@ -61,8 +69,8 @@ const Header: React.FC<HeaderProps> = ({ userRole, userName, onMenuClick }) => {
               style={{ perspective: '1000px' }}
             >
               <Link to="/" className="flex-shrink-0 flex items-center space-x-3">
+                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-12 w-12 object-contain" />}
                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">Dr. AIT ClubHubs</h1>
-                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-10 w-10 object-contain" />}
               </Link>
             </motion.div>
           </div>

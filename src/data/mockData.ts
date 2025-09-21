@@ -70,15 +70,19 @@ export const mockUsers: User[] = Array.from({ length: 20 }, (_, index) => {
   if (contributionPoints > 250) achievements.push(allAchievements[1]);
   if (contributionPoints > 750) achievements.push(allAchievements[2]);
 
+  const firstName = faker.person.firstName();
+  const lastName = faker.person.lastName();
+  const userName = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`;
+
   return {
     id: faker.string.uuid(),
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
+    name: `${firstName} ${lastName}`,
+    email: faker.internet.email({ firstName, lastName }),
     role: isStudent ? 'student' : 'leader',
     avatar: faker.image.avatar(),
     usn: isStudent ? `1DA${faker.number.int({min: 20, max: 23})}${faker.helpers.arrayElement(['CS', 'IS', 'EC', 'ME'])}${faker.number.int({min: 100, max: 199})}` : undefined,
     branch: isStudent ? faker.helpers.arrayElement(['Computer Science', 'Information Science', 'Electronics', 'Mechanical']) : undefined,
-    contact: isStudent ? faker.phone.number() : undefined,
+    contact: faker.phone.number(),
     interests: isStudent ? faker.helpers.arrayElements(['Technical', 'Arts', 'Public Speaking', 'Photography', 'Community Service'], {min: 2, max: 4}) : [],
     certifications: isStudent ? Array.from({length: faker.number.int({min: 1, max: 3})}, () => ({
       id: faker.string.uuid(),
@@ -88,6 +92,11 @@ export const mockUsers: User[] = Array.from({ length: 20 }, (_, index) => {
     })) : [],
     contributionPoints,
     achievements,
+    socials: !isStudent ? {
+        twitter: `https://twitter.com/${userName}`,
+        linkedin: `https://linkedin.com/in/${userName}`,
+        website: faker.internet.url(),
+    } : undefined,
   }
 });
 

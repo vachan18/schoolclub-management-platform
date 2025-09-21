@@ -15,6 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { AnimatePresence } from 'framer-motion';
 import Toast from './components/Toast.tsx';
+import { useSoundEffect } from './hooks/useSoundEffect.ts';
 
 const useAuth = (role: 'leader' | 'admin') => {
   const storageKey = `${role}IsAuthenticated`;
@@ -42,8 +43,10 @@ const AppContent: React.FC = () => {
   const adminAuth = useAuth('admin');
   const navigate = useNavigate();
   const location = useLocation();
+  const playLoginSound = useSoundEffect();
 
   const handleRoleSelect = (role: 'student' | 'leader' | 'admin') => {
+    playLoginSound();
     if (role === 'student') {
       navigate('/student');
     } else if (role === 'leader') {
@@ -55,6 +58,7 @@ const AppContent: React.FC = () => {
 
   const handleLeaderLogin = (email: string, password: string) => {
     if (email === 'leader@school.edu' && password === 'password123') {
+      playLoginSound();
       leaderAuth.login(() => navigate('/leader-dashboard'));
     } else {
       alert('Invalid credentials. Please use: leader@school.edu / password123');
@@ -63,6 +67,7 @@ const AppContent: React.FC = () => {
   
   const handleAdminLogin = (email: string, password: string) => {
     if (email === 'admin@school.edu' && password === 'password123') {
+      playLoginSound();
       adminAuth.login(() => navigate('/admin-dashboard'));
     } else {
       alert('Invalid credentials. Please use: admin@school.edu / password123');

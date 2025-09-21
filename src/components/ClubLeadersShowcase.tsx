@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useUserData } from '../context/UserDataContext';
-import { Award } from 'lucide-react';
+import { User, Club } from '../types';
+import LeaderDetailModal from './LeaderDetailModal';
 
 const ClubLeadersShowcase: React.FC = () => {
-    const { clubs } = useUserData();
+    const { clubs, users } = useUserData();
+    const [selectedLeader, setSelectedLeader] = useState<{ user: User, club: Club } | null>(null);
+
+    const handleLeaderClick = (club: Club) => {
+        const leaderUser = users.find(u => u.id === club.leaderId);
+        if (leaderUser) {
+            setSelectedLeader({ user: leaderUser, club });
+        }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -40,7 +49,8 @@ const ClubLeadersShowcase: React.FC = () => {
                         <motion.div 
                             key={club.id} 
                             variants={itemVariants}
-                            className="text-center group"
+                            className="text-center group cursor-pointer"
+                            onClick={() => handleLeaderClick(club)}
                         >
                             <div className="relative w-24 h-24 mx-auto mb-4">
                                 <img 
@@ -58,6 +68,11 @@ const ClubLeadersShowcase: React.FC = () => {
                     ))}
                 </motion.div>
             </div>
+            <LeaderDetailModal 
+                isOpen={!!selectedLeader} 
+                onClose={() => setSelectedLeader(null)} 
+                leaderData={selectedLeader}
+            />
         </section>
     );
 };

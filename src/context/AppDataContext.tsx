@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { faker } from '@faker-js/faker';
-import { Testimonial, ImpactStat, MeetingSchedule } from '../types';
-import { mockTestimonials, mockImpactStats, mockMeetingSchedules } from '../data/mockData';
+import { Testimonial, ImpactStat, MeetingSchedule, GalleryImage, Notification } from '../types';
+import { mockTestimonials, mockImpactStats, mockMeetingSchedules, mockGalleryImages, mockNotifications } from '../data/mockData';
 
 interface AppDataContextType {
   testimonials: Testimonial[];
@@ -12,6 +12,10 @@ interface AppDataContextType {
   setEvents: (events: MeetingSchedule[] | ((val: MeetingSchedule[]) => MeetingSchedule[])) => void;
   siteLogo: string | null;
   setSiteLogo: (logo: string | null | ((val: string | null) => string | null)) => void;
+  galleryImages: GalleryImage[];
+  setGalleryImages: (images: GalleryImage[] | ((val: GalleryImage[]) => GalleryImage[])) => void;
+  notifications: Notification[];
+  setNotifications: (notifications: Notification[] | ((val: Notification[]) => Notification[])) => void;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -31,9 +35,20 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T | ((va
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Filter out blob URLs before saving to localStorage
+      const replacer = (key: string, value: any) => {
+        if (typeof value === 'string' && value.startsWith('blob:')) {
+          return undefined; // Exclude blob URLs from serialization
+        }
+        return value;
+      };
+      window.localStorage.setItem(key, JSON.stringify(valueToStore, replacer));
     } catch (error) {
-      console.error(error);
+      if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        console.warn(`LocalStorage quota exceeded for key "${key}". Data will not be persisted for this session. Please connect a backend for permanent storage.`);
+      } else {
+        console.error(error);
+      }
     }
   };
 
@@ -47,6 +62,9 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [impactStats, setImpactStats] = useLocalStorage<ImpactStat[]>('impactStats', mockImpactStats);
   const [events, setEvents] = useLocalStorage<MeetingSchedule[]>('events', mockMeetingSchedules);
   const [siteLogo, setSiteLogo] = useLocalStorage<string | null>('siteLogo', defaultLogo);
+  const [galleryImages, setGalleryImages] = useLocalStorage<GalleryImage[]>('galleryImages', mockGalleryImages);
+  const [notifications, setNotifications] = useLocalStorage<Notification[]>('notifications', mockNotifications);
+
 
   useEffect(() => {
     if (events && events.length > 0) {
@@ -66,7 +84,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   return (
-    <AppDataContext.Provider value={{ testimonials, setTestimonials, impactStats, setImpactStats, events, setEvents, siteLogo, setSiteLogo }}>
+    <AppDataContext.Provider value={{ testimonials, setTestimonials, impactStats, setImpactStats, events, setEvents, siteLogo, setSiteLogo, galleryImages, setGalleryImages, notifications, setNotifications }}>
       {children}
     </AppDataContext.Provider>
   );

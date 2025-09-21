@@ -48,6 +48,11 @@ export interface User {
   }[];
   contributionPoints: number;
   achievements?: Achievement[];
+  socials?: {
+    twitter?: string;
+    linkedin?: string;
+    website?: string;
+  };
 }
 
 export interface ClubMember {

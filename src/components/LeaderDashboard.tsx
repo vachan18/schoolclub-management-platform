@@ -40,7 +40,7 @@ const LeaderDashboard: React.FC = () => {
   const { clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, users } = useUserData();
   const { showToast } = useToast();
   
-  const leaderClubs = useMemo(() => clubs.filter(c => users.find(u => u.id === c.leaderId && u.role === 'leader')), [clubs, users]);
+  const leaderClubs = useMemo(() => clubs, [clubs]);
   
   const [selectedClubId, setSelectedClubId] = useState<string>(leaderClubs[0]?.id || '');
   const [selectedTab, setSelectedTab] = useState('overview');
@@ -340,14 +340,11 @@ const SettingsTab: React.FC<{ editedData: any, setEditedData: React.Dispatch<Rea
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setEditedData((prev: any) => ({
-                    ...prev,
-                    clubDetails: { ...prev.clubDetails, leaderAvatar: e.target?.result as string }
-                }));
-            };
-            reader.readAsDataURL(file);
+            const newAvatarUrl = URL.createObjectURL(file);
+            setEditedData((prev: any) => ({
+                ...prev,
+                clubDetails: { ...prev.clubDetails, leaderAvatar: newAvatarUrl }
+            }));
         }
     }, [setEditedData]);
 

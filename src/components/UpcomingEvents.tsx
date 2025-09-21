@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Ticket, Calendar, Clock, MapPin, Users, Mic } from 'lucide-react';
 import { useAppData } from '../context/AppDataContext';
+import { useToast } from '../context/ToastContext';
 import { MeetingSchedule } from '../types';
 
 const eventCategories = ['all', 'audition', 'performance', 'talk', 'workshop', 'event'];
@@ -9,7 +10,8 @@ const eventCategories = ['all', 'audition', 'performance', 'talk', 'workshop', '
 const UpcomingEvents: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const { events } = useAppData();
+    const { events, setNotifications } = useAppData();
+    const { showToast } = useToast();
 
     const upcomingEvents = useMemo(() => {
         return events
@@ -26,6 +28,16 @@ const UpcomingEvents: React.FC = () => {
             return matchesCategory && matchesSearch;
         });
     }, [upcomingEvents, selectedCategory, searchTerm]);
+
+    const handleBookTicket = (event: MeetingSchedule) => {
+        showToast(`Ticket successfully booked for "${event.title}"!`, 'success');
+        setNotifications(prev => [{
+            id: crypto.randomUUID(),
+            content: `You have a ticket for ${event.title} on ${new Date(event.date).toLocaleDateString()}.`,
+            createdAt: new Date().toISOString(),
+            read: false
+        }, ...prev]);
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -80,7 +92,7 @@ const UpcomingEvents: React.FC = () => {
                 >
                     <AnimatePresence>
                         {filteredEvents.length > 0 ? (
-                            filteredEvents.map(event => <EventCard key={event.id} event={event} />)
+                            filteredEvents.map(event => <EventCard key={event.id} event={event} onBookTicket={handleBookTicket} />)
                         ) : (
                             <motion.div variants={itemVariants} className="text-center py-12">
                                 <p className="text-gray-500 dark:text-gray-400">No upcoming events match your criteria.</p>
@@ -93,7 +105,7 @@ const UpcomingEvents: React.FC = () => {
     );
 };
 
-const EventCard: React.FC<{ event: MeetingSchedule }> = ({ event }) => {
+const EventCard: React.FC<{ event: MeetingSchedule; onBookTicket: (event: MeetingSchedule) => void; }> = ({ event, onBookTicket }) => {
     const formattedDate = new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     return (
@@ -110,10 +122,10 @@ const EventCard: React.FC<{ event: MeetingSchedule }> = ({ event }) => {
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{event.title}</h3>
                     </div>
                     {event.ticketUrl && (
-                        <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                        <button onClick={() => onBookTicket(event)} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
                             <Ticket className="h-4 w-4" />
-                            <span>Book Tickets</span>
-                        </a>
+                            <span>Book Ticket</span>
+                        </button>
                     )}
                 </div>
                 <div className="mt-4 space-y-3 text-gray-600 dark:text-gray-400">

@@ -51,11 +51,8 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setEditedProfile(p => ({ ...p, avatar: e.target?.result as string }));
-            };
-            reader.readAsDataURL(acceptedFiles[0]);
+            const newAvatarUrl = URL.createObjectURL(acceptedFiles[0]);
+            setEditedProfile(p => ({ ...p, avatar: newAvatarUrl }));
         }
     }, []);
 
@@ -129,7 +126,14 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
 
     return (
         <div className="py-8">
-            <div className="bg-foreground dark:bg-foreground rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="relative bg-foreground dark:bg-foreground rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="absolute top-6 right-6 z-10">
+                    <button onClick={handleToggleEdit} className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-md">
+                        {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
+                        <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                    </button>
+                </div>
+
                 <div className="p-6 flex flex-col md:flex-row items-center gap-6">
                     <div className="relative">
                         <img src={editedProfile.avatar} alt={editedProfile.name} className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/50" />
@@ -147,12 +151,6 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{editedProfile.name}</h1>
                         )}
                         <p className="text-primary font-medium capitalize">{editedProfile.role}</p>
-                    </div>
-                    <div className="ml-auto">
-                        <button onClick={handleToggleEdit} className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                            {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
-                            <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
-                        </button>
                     </div>
                 </div>
 
