@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { User as UserIcon, UploadCloud, Edit, Save, Mail, Phone, Hash, Briefcase, Award, Plus, Trash2, X, XCircle, Rocket, Star, Trophy, CalendarCheck } from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
+import { useToast } from '../context/ToastContext';
 import { User, Achievement } from '../types';
 
 const SaveChangesBar: React.FC<{ onSave: () => void; onDiscard: () => void; }> = ({ onSave, onDiscard }) => (
@@ -34,6 +35,7 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
     const { setUsers } = useUserData();
+    const { showToast } = useToast();
     const [originalProfile, setOriginalProfile] = useState<User>(() => JSON.parse(JSON.stringify(student)));
     const [editedProfile, setEditedProfile] = useState<User>(() => JSON.parse(JSON.stringify(student)));
     const [isEditing, setIsEditing] = useState(false);
@@ -49,7 +51,11 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            setEditedProfile(p => ({ ...p, avatar: URL.createObjectURL(acceptedFiles[0]) }));
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setEditedProfile(p => ({ ...p, avatar: e.target?.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
 
@@ -89,7 +95,7 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
         setUsers(prevUsers => prevUsers.map(u => u.id === editedProfile.id ? editedProfile : u));
         setOriginalProfile(editedProfile);
         setIsEditing(false);
-        alert("Profile saved successfully!");
+        showToast("Profile saved successfully!");
     };
 
     const handleDiscard = () => {

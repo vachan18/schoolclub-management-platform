@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Notification } from '../types';
 import { mockNotifications } from '../data/mockData';
 import NotificationPanel from './NotificationPanel';
+import { useAppData } from '../context/AppDataContext';
+import { useSoundEffect } from '../hooks/useSoundEffect';
 
 interface HeaderProps {
   userRole?: 'student' | 'leader' | 'admin';
@@ -16,6 +18,8 @@ const Header: React.FC<HeaderProps> = ({ userRole, userName, onMenuClick }) => {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const { siteLogo } = useAppData();
+  const playLogoSound = useSoundEffect();
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -50,9 +54,17 @@ const Header: React.FC<HeaderProps> = ({ userRole, userName, onMenuClick }) => {
                 <Menu className="h-6 w-6" />
               </button>
             )}
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-800 dark:text-white">Dr. AIT ClubHubs</h1>
-            </Link>
+            <motion.div
+              onTap={playLogoSound}
+              whileTap={{ scale: 1.1, rotateY: 360 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              style={{ perspective: '1000px' }}
+            >
+              <Link to="/" className="flex-shrink-0 flex items-center space-x-3">
+                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Dr. AIT ClubHubs</h1>
+                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-10 w-10 object-contain" />}
+              </Link>
+            </motion.div>
           </div>
 
           <div className="hidden md:block flex-1 max-w-md mx-8">

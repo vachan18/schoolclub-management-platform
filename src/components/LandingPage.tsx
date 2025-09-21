@@ -6,6 +6,7 @@ import { useAppData } from '../context/AppDataContext';
 import AnimatedCounter from './AnimatedCounter';
 import UpcomingEvents from './UpcomingEvents';
 import ClubLeadersShowcase from './ClubLeadersShowcase';
+import { useSoundEffect } from '../hooks/useSoundEffect';
 
 interface LandingPageProps {
   onRoleSelect: (role: 'student' | 'leader' | 'admin') => void;
@@ -16,7 +17,8 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
-  const { testimonials, impactStats } = useAppData();
+  const { testimonials, impactStats, siteLogo } = useAppData();
+  const playLogoSound = useSoundEffect();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -62,18 +64,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRoleSelect }) => {
       exit={{ opacity: 0 }}
       className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-background dark:via-background dark:to-black"
     >
-      <header className="relative z-20 bg-foreground/80 dark:bg-foreground/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0">
+      <header className="border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <Link to="/">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-red-600 bg-clip-text text-transparent">Dr. AIT ClubHubs</h1>
-            </Link>
-            <nav className="hidden md:flex space-x-8">
+          <div className="flex justify-between items-center py-6">
+            <motion.div
+              onTap={playLogoSound}
+              whileTap={{ scale: 1.1, rotateY: 360 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              style={{ perspective: '1000px' }}
+            >
+              <Link to="/" className="flex items-center space-x-4">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-red-600 bg-clip-text text-transparent">Dr. AIT ClubHubs</h1>
+                {siteLogo && <img src={siteLogo} alt="Site Logo" className="h-12 w-12 object-contain" />}
+              </Link>
+            </motion.div>
+            <nav className="hidden md:flex space-x-2">
               {navItems.map(item => (
                 item.isExternal ? (
-                  <Link key={item.name} to={item.href} className="capitalize text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">{item.name}</Link>
+                  <Link key={item.name} to={item.href} className="capitalize px-4 py-2 rounded-md font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">{item.name}</Link>
                 ) : (
-                  <a key={item.name} href={item.href} className="capitalize text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">{item.name}</a>
+                  <a key={item.name} href={item.href} className="capitalize px-4 py-2 rounded-md font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">{item.name}</a>
                 )
               ))}
             </nav>

@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, FileText, Trash2, Edit, Plus, Save, UploadCloud, Calendar, Users } from 'lucide-react';
+import { Palette, FileText, Trash2, Edit, Plus, Save, UploadCloud, Calendar, Users, Image as ImageIcon } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { useDropzone } from 'react-dropzone';
 import { useTheme } from '../context/ThemeContext';
 import { useAppData } from '../context/AppDataContext';
 import { useUserData } from '../context/UserDataContext';
+import { useToast } from '../context/ToastContext';
 import Header from './Header';
 import { Testimonial, ImpactStat, MeetingSchedule, Club } from '../types';
 
@@ -65,6 +66,8 @@ const AdminDashboard: React.FC = () => {
 };
 const ThemeEditor: React.FC = () => {
     const { themeSettings, setThemeSettings } = useTheme();
+    const { showToast } = useToast();
+
     const handleColorChange = (mode: 'light' | 'dark', key: string, color: string) => {
         const r = parseInt(color.slice(1, 3), 16);
         const g = parseInt(color.slice(3, 5), 16);
@@ -75,6 +78,11 @@ const ThemeEditor: React.FC = () => {
             [mode]: { ...prev[mode], [key]: rgbString }
         }));
     };
+    
+    const handleSaveTheme = () => {
+        showToast("Theme settings saved!");
+    };
+
     const ColorInput = ({ mode, colorKey, label }: { mode: 'light' | 'dark', colorKey: keyof typeof themeSettings.light, label: string }) => {
         const [showPicker, setShowPicker] = useState(false);
         const rgbString = themeSettings[mode][colorKey];
@@ -122,30 +130,86 @@ const ThemeEditor: React.FC = () => {
                     <ColorInput mode="dark" colorKey="foreground" label="Foreground Color" />
                 </div>
             </div>
+            <div className="flex justify-end mt-8">
+                <button onClick={handleSaveTheme} className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2">
+                    <Save className="h-4 w-4" /><span>Save Theme</span>
+                </button>
+            </div>
         </div>
     );
 };
 const ContentEditor: React.FC = () => {
     return (
         <div className="p-6 space-y-8">
+            <SiteBrandingManager />
             <ImpactStatsManager />
             <TestimonialsManager />
         </div>
     );
 };
+const SiteBrandingManager: React.FC = () => {
+    const { siteLogo, setSiteLogo } = useAppData();
+    const { showToast } = useToast();
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        if (acceptedFiles[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setSiteLogo(e.target?.result as string);
+                showToast("Site logo updated!");
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
+        }
+    }, [setSiteLogo, showToast]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.svg', '.gif'] },
+        multiple: false,
+    });
+    return (
+        <div>
+            <h2 className="text-xl font-semibold mb-4">Site Branding</h2>
+            <div className="p-4 border rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Site Logo</label>
+                <div className="mt-2 flex items-center space-x-4">
+                    {siteLogo ? (
+                        <img src={siteLogo} alt="Site Logo" className="h-16 w-16 rounded-lg object-contain bg-gray-100 dark:bg-gray-700 p-1"/>
+                    ) : (
+                        <div className="h-16 w-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-gray-500" />
+                        </div>
+                    )}
+                    <div {...getRootProps()} className={`flex-grow p-4 border-2 border-dashed rounded-lg cursor-pointer text-center ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'}`}>
+                        <input {...getInputProps()} />
+                        <UploadCloud className="mx-auto h-6 w-6 text-gray-400" />
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            {isDragActive ? 'Drop the logo here' : 'Drag & drop or click to upload a new logo'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 const ImpactStatsManager: React.FC = () => {
     const { impactStats, setImpactStats } = useAppData();
+    const { showToast } = useToast();
     const [localStats, setLocalStats] = useState<ImpactStat[]>(impactStats);
+
     useEffect(() => {
         setLocalStats(impactStats);
     }, [impactStats]);
+
     const handleStatChange = (id: string, value: number) => {
         setLocalStats(prev => prev.map(stat => stat.id === id ? { ...stat, value } : stat));
     };
+
     const handleSave = () => {
         setImpactStats(localStats);
-        alert("Impact stats updated successfully!");
+        showToast("Impact stats updated successfully!");
     };
+
     return (
         <div>
             <h2 className="text-xl font-semibold mb-4">Impact Stats Manager</h2>
@@ -173,6 +237,7 @@ const ImpactStatsManager: React.FC = () => {
 const TestimonialsManager: React.FC = () => {
     const { testimonials, setTestimonials } = useAppData();
     const [editing, setEditing] = useState<Testimonial | null>(null);
+
     const handleSave = (testimonial: Testimonial) => {
         setTestimonials(prev => {
             const existing = prev.find(t => t.id === testimonial.id);
@@ -183,19 +248,22 @@ const TestimonialsManager: React.FC = () => {
         });
         setEditing(null);
     };
+
     const handleDelete = (id: string) => {
         if (window.confirm("Are you sure you want to delete this testimonial?")) {
             setTestimonials(prev => prev.filter(t => t.id !== id));
         }
     };
+
     if (editing) {
         return <TestimonialForm testimonial={editing} onSave={handleSave} onCancel={() => setEditing(null)} />;
     }
+
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Testimonials Manager</h2>
-                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     <Plus /><span>Add New</span>
                 </button>
             </div>
@@ -221,24 +289,34 @@ const TestimonialsManager: React.FC = () => {
 };
 const TestimonialForm: React.FC<{ testimonial: Testimonial, onSave: (t: Testimonial) => void, onCancel: () => void }> = ({ testimonial, onSave, onCancel }) => {
     const [formState, setFormState] = useState(testimonial);
+    const { showToast } = useToast();
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const previewUrl = URL.createObjectURL(acceptedFiles[0]);
-            setFormState(p => ({ ...p, image: previewUrl }));
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setFormState(p => ({ ...p, image: e.target?.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { 'image/*': ['.jpeg', '.png', '.jpg'] },
         multiple: false,
     });
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormState({ ...formState, [e.target.name]: e.target.value });
     };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
+        showToast("Testimonial saved successfully!");
     };
+
     return (
         <form onSubmit={handleSubmit} className="p-6 space-y-4 border rounded-lg mt-6">
             <h2 className="text-xl font-semibold mb-4">{testimonial.name ? 'Edit' : 'Add'} Testimonial</h2>
@@ -280,6 +358,7 @@ const EventsManager: React.FC = () => {
     const { events, setEvents } = useAppData();
     const [editingEvent, setEditingEvent] = useState<MeetingSchedule | null>(null);
     const auditoriumEvents = events.filter(e => e.location === 'College Auditorium');
+
     const handleSave = (event: MeetingSchedule) => {
         setEvents(prev => {
             const existing = prev.find(e => e.id === event.id);
@@ -290,14 +369,17 @@ const EventsManager: React.FC = () => {
         });
         setEditingEvent(null);
     };
+
     const handleDelete = (id: string) => {
         if (window.confirm("Are you sure you want to delete this event?")) {
             setEvents(prev => prev.filter(e => e.id !== id));
         }
     };
+
     if (editingEvent) {
         return <EventForm event={editingEvent} onSave={handleSave} onCancel={() => setEditingEvent(null)} />;
     }
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -325,13 +407,18 @@ const EventsManager: React.FC = () => {
 };
 const EventForm: React.FC<{ event: MeetingSchedule, onSave: (e: MeetingSchedule) => void, onCancel: () => void }> = ({ event, onSave, onCancel }) => {
     const [formState, setFormState] = useState(event);
+    const { showToast } = useToast();
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormState({ ...formState, [e.target.name]: e.target.value });
     };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
+        showToast("Event saved successfully!");
     };
+
     return (
         <form onSubmit={handleSubmit} className="p-6 space-y-4 border-t dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-4">{event.title ? 'Edit' : 'Add'} Event</h2>
@@ -421,12 +508,18 @@ const ClubManager: React.FC = () => {
 };
 const ClubForm: React.FC<{ club: Club, leaders: any[], onSave: (c: Club) => void, onCancel: () => void }> = ({ club, leaders, onSave, onCancel }) => {
     const [formState, setFormState] = useState(club);
+    const { showToast } = useToast();
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const previewUrl = URL.createObjectURL(acceptedFiles[0]);
-            setFormState(p => ({ ...p, leaderAvatar: previewUrl }));
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setFormState(p => ({ ...p, leaderAvatar: e.target?.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': ['.jpeg', '.png', '.jpg'] }, multiple: false });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -442,6 +535,7 @@ const ClubForm: React.FC<{ club: Club, leaders: any[], onSave: (c: Club) => void
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
+        showToast(`Club "${formState.name}" saved successfully!`);
     };
 
     return (

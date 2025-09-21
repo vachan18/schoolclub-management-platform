@@ -3,6 +3,7 @@ import { Plus, Users, Calendar, Bell, Settings, Edit3, Trash2, Moon, Sun, Save, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { useUserData } from '../context/UserDataContext';
+import { useToast } from '../context/ToastContext';
 import Header from './Header';
 import { Club, ClubMember, Announcement, MeetingSchedule, User as UserType } from '../types';
 import MemberModal from './MemberModal';
@@ -37,6 +38,7 @@ const SaveChangesBar: React.FC<{ onSave: () => void; onDiscard: () => void; }> =
 
 const LeaderDashboard: React.FC = () => {
   const { clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, users } = useUserData();
+  const { showToast } = useToast();
   
   const leaderClubs = useMemo(() => clubs.filter(c => users.find(u => u.id === c.leaderId && u.role === 'leader')), [clubs, users]);
   
@@ -79,7 +81,7 @@ const LeaderDashboard: React.FC = () => {
     setMeetings(prev => [...prev.filter(m => m.clubId !== selectedClubId), ...editedData.meetings]);
     
     setOriginalData(JSON.parse(JSON.stringify(editedData)));
-    alert('All changes saved successfully!');
+    showToast('All changes saved successfully!');
   };
 
   const handleDiscardAll = () => setEditedData(JSON.parse(JSON.stringify(originalData)));
@@ -338,11 +340,14 @@ const SettingsTab: React.FC<{ editedData: any, setEditedData: React.Dispatch<Rea
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
         if (file) {
-            const previewUrl = URL.createObjectURL(file);
-            setEditedData((prev: any) => ({
-                ...prev,
-                clubDetails: { ...prev.clubDetails, leaderAvatar: previewUrl }
-            }));
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setEditedData((prev: any) => ({
+                    ...prev,
+                    clubDetails: { ...prev.clubDetails, leaderAvatar: e.target?.result as string }
+                }));
+            };
+            reader.readAsDataURL(file);
         }
     }, [setEditedData]);
 

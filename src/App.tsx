@@ -14,6 +14,7 @@ import GalleryPage from './components/GalleryPage';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { AnimatePresence } from 'framer-motion';
+import Toast from './components/Toast.tsx';
 
 const useAuth = (role: 'leader' | 'admin') => {
   const storageKey = `${role}IsAuthenticated`;
@@ -83,6 +84,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="App">
+      <Toast />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<LandingPage onRoleSelect={handleRoleSelect} />} />
