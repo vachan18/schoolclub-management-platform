@@ -263,7 +263,7 @@ const TestimonialsManager: React.FC = () => {
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Testimonials Manager</h2>
-                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     <Plus /><span>Add New</span>
                 </button>
             </div>
