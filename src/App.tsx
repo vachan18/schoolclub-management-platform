@@ -20,7 +20,6 @@ import { useSoundEffect } from './hooks/useSoundEffect.ts';
 import { useUserData } from './context/UserDataContext.tsx';
 import { useToast } from './context/ToastContext.tsx';
 import { User } from './types/index.ts';
-import VoiceAssistant from './components/VoiceAssistant.tsx';
 
 const useAuth = (role: 'student' | 'leader' | 'admin') => {
   const storageKey = `${role}IsAuthenticated`;
@@ -170,7 +169,6 @@ const AppContent: React.FC = () => {
           {isAuthenticated ? 'Logout & Home' : '← Back to Home'}
         </button>
       )}
-      <VoiceAssistant />
     </div>
   );
 };
