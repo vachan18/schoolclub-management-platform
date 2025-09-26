@@ -1,11 +1,11 @@
 {
   "hero": {
-    "title": "[ta] Build. Innovate. Lead.",
-    "subtitle": "[ta] The central hub for all student activities at Dr. AIT. Discover clubs, manage teams, and collaborate on groundbreaking projects."
+    "title": "உருவாக்குங்கள். புதுமைப்படுத்துங்கள். வழிநடத்துங்கள்.",
+    "subtitle": "டாக்டர். ஏஐடியில் உள்ள அனைத்து மாணவர் செயல்பாடுகளுக்குமான மையப் புள்ளி. கிளப்புகளைக் கண்டறியவும், அணிகளை நிர்வகிக்கவும், மற்றும் அற்புதமான திட்டங்களில் ஒத்துழைக்கவும்."
   },
   "roles": {
-    "student": "[ta] I'm a Student",
-    "leader": "[ta] I'm a Club Leader",
-    "admin": "[ta] Site Management"
+    "student": "நான் ஒரு மாணவன்",
+    "leader": "நான் ஒரு கிளப் தலைவர்",
+    "admin": "தள மேலாண்மை"
   }
 }

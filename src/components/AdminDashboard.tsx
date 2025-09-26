@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, FileText, Trash2, Edit, Plus, Save, UploadCloud, Calendar, Users, Image as ImageIcon } from 'lucide-react';
+import { Palette, FileText, Trash2, Edit, Plus, Save, UploadCloud, Calendar, Users, Image as ImageIcon, Shield } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { useDropzone } from 'react-dropzone';
 import { useTheme } from '../context/ThemeContext';
@@ -15,14 +15,6 @@ import UserEditModal from './UserEditModal';
 
 const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('theme');
-    const { showToast } = useToast();
-
-    const handleSaveAll = () => {
-        // In a real app, this would trigger API calls to save all dirty data.
-        // Since our contexts use localStorage, changes are already saved.
-        // This button provides UX feedback that an action has been completed.
-        showToast("All site-wide settings have been saved!");
-    };
 
     return (
         <motion.div
@@ -35,9 +27,6 @@ const AdminDashboard: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                    <button onClick={handleSaveAll} className="px-6 py-2.5 bg-blue-600 text-white rounded-md flex items-center space-x-2 shadow-lg hover:bg-blue-700 transition-colors">
-                        <Save className="h-5 w-5" /><span>Save All Changes</span>
-                    </button>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-1">
@@ -48,6 +37,9 @@ const AdminDashboard: React.FC = () => {
                                 </button>
                                 <button onClick={() => setActiveTab('content')} className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm font-medium text-left rounded-md transition-colors ${activeTab === 'content' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
                                     <FileText /><span>Content Manager</span>
+                                </button>
+                                <button onClick={() => setActiveTab('users')} className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm font-medium text-left rounded-md transition-colors ${activeTab === 'users' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+                                    <Shield /><span>User Management</span>
                                 </button>
                                 <button onClick={() => setActiveTab('events')} className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm font-medium text-left rounded-md transition-colors ${activeTab === 'events' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
                                     <Calendar /><span>Events Manager</span>
@@ -73,6 +65,7 @@ const AdminDashboard: React.FC = () => {
                                 >
                                     {activeTab === 'theme' && <ThemeEditor />}
                                     {activeTab === 'content' && <ContentEditor />}
+                                    {activeTab === 'users' && <UserManager />}
                                     {activeTab === 'events' && <EventsManager />}
                                     {activeTab === 'clubs' && <ClubManager />}
                                     {activeTab === 'gallery' && <GalleryManager />}
@@ -87,6 +80,7 @@ const AdminDashboard: React.FC = () => {
 };
 const ThemeEditor: React.FC = () => {
     const { themeSettings, setThemeSettings } = useTheme();
+    const { showToast } = useToast();
 
     const handleColorChange = (mode: 'light' | 'dark', key: string, color: string) => {
         const r = parseInt(color.slice(1, 3), 16);
@@ -146,9 +140,11 @@ const ThemeEditor: React.FC = () => {
                     <ColorInput mode="dark" colorKey="foreground" label="Foreground Color" />
                 </div>
             </div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 mt-6">
-                Theme changes are applied live. Click "Save All Changes" at the top to confirm.
-            </p>
+             <div className="mt-6 text-right">
+                <button onClick={() => showToast("Theme settings saved permanently!")} className="px-6 py-2.5 bg-blue-600 text-white rounded-md flex items-center space-x-2 shadow-lg hover:bg-blue-700 transition-colors">
+                    <Save className="h-5 w-5" /><span>Save Theme</span>
+                </button>
+            </div>
         </div>
     );
 };
@@ -163,13 +159,18 @@ const ContentEditor: React.FC = () => {
 };
 const SiteBrandingManager: React.FC = () => {
     const { siteLogo, setSiteLogo } = useAppData();
+    const { showToast } = useToast();
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const newLogoUrl = URL.createObjectURL(acceptedFiles[0]);
-            setSiteLogo(newLogoUrl);
+            const reader = new FileReader();
+            reader.onload = () => {
+                setSiteLogo(reader.result as string);
+                showToast("Logo updated. Click save to make it permanent.");
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
-    }, [setSiteLogo]);
+    }, [setSiteLogo, showToast]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -197,12 +198,18 @@ const SiteBrandingManager: React.FC = () => {
                         </p>
                     </div>
                 </div>
+                 <div className="mt-4 text-right">
+                    <button onClick={() => showToast("Branding saved permanently!")} className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2 text-sm">
+                        <Save className="h-4 w-4" /><span>Save Branding</span>
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 const ImpactStatsManager: React.FC = () => {
     const { impactStats, setImpactStats } = useAppData();
+    const { showToast } = useToast();
 
     const handleStatChange = (id: string, value: number) => {
         setImpactStats(prev => prev.map(stat => stat.id === id ? { ...stat, value } : stat));
@@ -211,27 +218,32 @@ const ImpactStatsManager: React.FC = () => {
     return (
         <div>
             <h2 className="text-xl font-semibold mb-4">Impact Stats Manager</h2>
-            <div className="p-4 border rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4">
-                {impactStats.map(stat => (
-                    <div key={stat.id}>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{stat.label}</label>
-                        <input
-                            type="number"
-                            value={stat.value}
-                            onChange={(e) => handleStatChange(stat.id, parseInt(e.target.value, 10) || 0)}
-                            className="mt-1 input-style"
-                        />
-                    </div>
-                ))}
+            <div className="p-4 border rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {impactStats.map(stat => (
+                        <div key={stat.id}>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{stat.label}</label>
+                            <input
+                                type="number"
+                                value={stat.value}
+                                onChange={(e) => handleStatChange(parseInt(e.target.value, 10) || 0)}
+                                className="mt-1 input-style"
+                            />
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-4 text-right">
+                    <button onClick={() => showToast("Impact stats saved permanently!")} className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2 text-sm">
+                        <Save className="h-4 w-4" /><span>Save Stats</span>
+                    </button>
+                </div>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                Changes are applied live. Click "Save All Changes" at the top to confirm.
-            </p>
         </div>
     );
 };
 const TestimonialsManager: React.FC = () => {
     const { testimonials, setTestimonials } = useAppData();
+    const { showToast } = useToast();
     const [editing, setEditing] = useState<Testimonial | null>(null);
 
     const handleSave = (testimonial: Testimonial) => {
@@ -243,11 +255,13 @@ const TestimonialsManager: React.FC = () => {
             return [...prev, testimonial];
         });
         setEditing(null);
+        showToast("Testimonial saved permanently!");
     };
 
     const handleDelete = (id: string) => {
         if (window.confirm("Are you sure you want to delete this testimonial?")) {
             setTestimonials(prev => prev.filter(t => t.id !== id));
+            showToast("Testimonial deleted permanently.");
         }
     };
 
@@ -259,7 +273,7 @@ const TestimonialsManager: React.FC = () => {
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Testimonials Manager</h2>
-                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                <button onClick={() => setEditing({ id: crypto.randomUUID(), name: '', role: '', quote: '', image: 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/150x150/EFEFEF/31343C?text=Upload' })} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     <Plus /><span>Add New</span>
                 </button>
             </div>
@@ -285,12 +299,14 @@ const TestimonialsManager: React.FC = () => {
 };
 const TestimonialForm: React.FC<{ testimonial: Testimonial, onSave: (t: Testimonial) => void, onCancel: () => void }> = ({ testimonial, onSave, onCancel }) => {
     const [formState, setFormState] = useState(testimonial);
-    const { showToast } = useToast();
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const newImageUrl = URL.createObjectURL(acceptedFiles[0]);
-            setFormState(p => ({ ...p, image: newImageUrl }));
+            const reader = new FileReader();
+            reader.onload = () => {
+                setFormState(p => ({ ...p, image: reader.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
 
@@ -307,7 +323,6 @@ const TestimonialForm: React.FC<{ testimonial: Testimonial, onSave: (t: Testimon
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
-        showToast("Testimonial saved successfully! Click 'Save All Changes' to make it permanent.");
     };
 
     return (
@@ -349,6 +364,7 @@ const TestimonialForm: React.FC<{ testimonial: Testimonial, onSave: (t: Testimon
 };
 const EventsManager: React.FC = () => {
     const { events, setEvents } = useAppData();
+    const { showToast } = useToast();
     const [editingEvent, setEditingEvent] = useState<MeetingSchedule | null>(null);
     const auditoriumEvents = events.filter(e => e.location === 'College Auditorium');
 
@@ -361,11 +377,13 @@ const EventsManager: React.FC = () => {
             return [...prev, event];
         });
         setEditingEvent(null);
+        showToast("Event saved permanently!");
     };
 
     const handleDelete = (id: string) => {
         if (window.confirm("Are you sure you want to delete this event?")) {
             setEvents(prev => prev.filter(e => e.id !== id));
+            showToast("Event deleted permanently.");
         }
     };
 
@@ -400,7 +418,6 @@ const EventsManager: React.FC = () => {
 };
 const EventForm: React.FC<{ event: MeetingSchedule, onSave: (e: MeetingSchedule) => void, onCancel: () => void }> = ({ event, onSave, onCancel }) => {
     const [formState, setFormState] = useState(event);
-    const { showToast } = useToast();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormState({ ...formState, [e.target.name]: e.target.value });
@@ -409,7 +426,6 @@ const EventForm: React.FC<{ event: MeetingSchedule, onSave: (e: MeetingSchedule)
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
-        showToast("Event saved successfully! Click 'Save All Changes' to make it permanent.");
     };
 
     return (
@@ -462,6 +478,7 @@ const EventForm: React.FC<{ event: MeetingSchedule, onSave: (e: MeetingSchedule)
 };
 const ClubManager: React.FC = () => {
     const { clubs, setClubs, users, setUsers } = useUserData();
+    const { showToast } = useToast();
     const [editingClub, setEditingClub] = useState<Club | null>(null);
 
     const handleSave = (club: Club) => {
@@ -473,6 +490,7 @@ const ClubManager: React.FC = () => {
             return [...prev, club];
         });
         setEditingClub(null);
+        showToast("Club details saved permanently!");
     };
 
     if (editingClub) {
@@ -507,8 +525,11 @@ const ClubForm: React.FC<{ club: Club, leaders: User[], onSave: (c: Club) => voi
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const newAvatarUrl = URL.createObjectURL(acceptedFiles[0]);
-            setFormState(p => ({ ...p, leaderAvatar: newAvatarUrl }));
+            const reader = new FileReader();
+            reader.onload = () => {
+                setFormState(p => ({ ...p, leaderAvatar: reader.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
 
@@ -527,7 +548,6 @@ const ClubForm: React.FC<{ club: Club, leaders: User[], onSave: (c: Club) => voi
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formState);
-        showToast(`Club "${formState.name}" saved successfully! Click 'Save All Changes' to make it permanent.`);
     };
 
     const handleOpenUserEditModal = () => {
@@ -608,19 +628,41 @@ const ClubForm: React.FC<{ club: Club, leaders: User[], onSave: (c: Club) => voi
 const GalleryManager: React.FC = () => {
     const { galleryImages, setGalleryImages } = useAppData();
     const { showToast } = useToast();
+    
+    const [localImages, setLocalImages] = useState<GalleryImage[]>(galleryImages);
     const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
     const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
+    useEffect(() => {
+        setLocalImages(galleryImages);
+    }, [galleryImages]);
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        const newImages: GalleryImage[] = acceptedFiles.map(file => ({
-            id: crypto.randomUUID(),
-            src: URL.createObjectURL(file),
-            caption: 'Newly uploaded image',
-            uploadedAt: new Date().toISOString(),
-        }));
-        setGalleryImages(prevImages => [...newImages, ...prevImages]);
-        showToast(`${newImages.length} image(s) uploaded. Click 'Save All Changes' to make them permanent.`);
-    }, [setGalleryImages, showToast]);
+        const wasEmpty = localImages.length === 0;
+        const newImages: GalleryImage[] = [];
+        let filesProcessed = 0;
+
+        acceptedFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                newImages.push({
+                    id: crypto.randomUUID(),
+                    src: reader.result as string,
+                    caption: file.name || 'Newly uploaded image',
+                    uploadedAt: new Date().toISOString(),
+                });
+                filesProcessed++;
+                if (filesProcessed === acceptedFiles.length) {
+                    setLocalImages(prevImages => wasEmpty ? newImages : [...newImages, ...prevImages]);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        if (acceptedFiles.length > 0) {
+            showToast(`${acceptedFiles.length} image(s) ready to be saved.`);
+        }
+    }, [localImages.length]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -628,11 +670,10 @@ const GalleryManager: React.FC = () => {
     });
 
     const handleSaveImageDetails = (updatedImage: GalleryImage) => {
-        setGalleryImages(prevImages =>
+        setLocalImages(prevImages =>
             prevImages.map(img => img.id === updatedImage.id ? updatedImage : img)
         );
         setEditingImage(null);
-        showToast("Image details updated. Click 'Save All Changes' to confirm.");
     };
 
     const handleDeleteImage = (id: string) => {
@@ -642,10 +683,14 @@ const GalleryManager: React.FC = () => {
     
     const confirmDeleteImage = () => {
         if (deletingImageId) {
-            setGalleryImages(prev => prev.filter(img => img.id !== deletingImageId));
+            setLocalImages(prev => prev.filter(img => img.id !== deletingImageId));
             setDeletingImageId(null);
-            showToast("Image deleted. Click 'Save All Changes' to confirm.");
         }
+    };
+
+    const handleSaveGallery = () => {
+        setGalleryImages(localImages);
+        showToast("Gallery saved permanently!");
     };
 
     return (
@@ -662,15 +707,21 @@ const GalleryManager: React.FC = () => {
                 <p className="mt-2 text-gray-600 dark:text-gray-400">
                     {isDragActive ? 'Drop the files here ...' : "Drag 'n' drop images here, or click to select files"}
                 </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">This will replace the existing gallery images if it's the first upload in a session.</p>
             </div>
             
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Click on an image to edit its details or delete it. Changes are applied live but require a final save.
-            </p>
+            <div className="flex justify-between items-center mb-6">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Click on an image to edit its details or delete it.
+                </p>
+                <button onClick={handleSaveGallery} className="px-6 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2 shadow-lg hover:bg-blue-700 transition-colors">
+                    <Save className="h-5 w-5" /><span>Save Gallery</span>
+                </button>
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 <AnimatePresence>
-                    {galleryImages.slice(0, 10).map((image) => (
+                    {localImages.map((image) => (
                         <motion.div
                             key={image.id}
                             className="group relative overflow-hidden rounded-lg shadow-md cursor-pointer"
@@ -704,6 +755,77 @@ const GalleryManager: React.FC = () => {
                 onClose={() => setDeletingImageId(null)}
                 onConfirm={confirmDeleteImage}
                 itemName="image"
+            />
+        </div>
+    );
+};
+
+const UserManager: React.FC = () => {
+    const { users, setUsers } = useUserData();
+    const { showToast } = useToast();
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+    const handleDeleteClick = (user: User) => {
+        if (user.role === 'admin') {
+            showToast("Admin users cannot be deleted.", "error");
+            return;
+        }
+        setUserToDelete(user);
+    };
+
+    const confirmDelete = () => {
+        if (userToDelete) {
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            showToast(`User "${userToDelete.name}" has been deleted.`, "success");
+            setUserToDelete(null);
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <h2 className="text-xl font-semibold mb-6">User Management</h2>
+            <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                    <thead className="border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Name</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Email</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Role</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {users.map(user => (
+                            <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <td className="py-3 px-4">
+                                    <div className="flex items-center space-x-3">
+                                        <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">{user.name}</span>
+                                    </div>
+                                </td>
+                                <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
+                                <td className="py-3 px-4">
+                                    <span className={`px-2 py-1 text-xs rounded-full capitalize ${
+                                        user.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' :
+                                        user.role === 'leader' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' :
+                                        'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                                    }`}>{user.role}</span>
+                                </td>
+                                <td className="py-3 px-4">
+                                    <button onClick={() => handleDeleteClick(user)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" disabled={user.role === 'admin'}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <DeleteConfirmationModal
+                isOpen={!!userToDelete}
+                onClose={() => setUserToDelete(null)}
+                onConfirm={confirmDelete}
+                itemName={`user: ${userToDelete?.name}`}
             />
         </div>
     );

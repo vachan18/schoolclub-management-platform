@@ -3,6 +3,9 @@ import { Club, User, ClubMember, Announcement, MeetingSchedule, Notification, Ga
 
 const faker = new Faker({ locale: [en_IN, en] });
 
+export const LEADER_USER_ID = 'leader-main-account-id';
+export const STUDENT_USER_ID = 'student-main-account-id';
+
 const clubNames = [
   'Fashion & Design Society',
   'Yoga & Wellness Circle',
@@ -64,57 +67,111 @@ const allAchievements: Achievement[] = [
     { id: 'ach-4', name: 'Event Enthusiast', description: 'Attended 5 club events', icon: 'CalendarCheck' },
 ];
 
-export const mockUsers: User[] = Array.from({ length: 20 }, (_, index) => {
-  const isStudent = index > 5; // Make more students than leaders
+const requestedLeaders = [
+    { id: 'leader-1', name: 'Chinmay', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face' },
+    { id: 'leader-2', name: 'Sumant', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' },
+    { id: 'leader-3', name: 'Rahul', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face' },
+    { id: 'leader-4', name: 'Nandana', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face' },
+    { id: 'leader-5', name: 'Anita', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop&crop=face' },
+    { id: 'leader-6', name: 'Rosie', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face' },
+];
+
+const mainLeader = { id: LEADER_USER_ID, name: 'Alex Johnson', email: 'leader@123', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=face' };
+
+const staticUsers: User[] = [
+    ...requestedLeaders.map(leader => ({
+        id: leader.id,
+        name: leader.name,
+        email: `${leader.name.toLowerCase()}@example.com`,
+        role: 'leader' as const,
+        password: 'password123',
+        avatar: leader.avatar,
+        contact: faker.phone.number(),
+        contributionPoints: faker.number.int({ min: 500, max: 1000 }),
+        socials: {
+            twitter: `https://twitter.com/${leader.name.toLowerCase()}`,
+            linkedin: `https://linkedin.com/in/${leader.name.toLowerCase()}`,
+            website: faker.internet.url(),
+        }
+    })),
+    {
+        id: mainLeader.id,
+        name: mainLeader.name,
+        email: mainLeader.email,
+        role: 'leader',
+        password: 'password123',
+        avatar: mainLeader.avatar,
+        contact: faker.phone.number(),
+        contributionPoints: faker.number.int({ min: 500, max: 1000 }),
+        socials: {
+            twitter: `https://twitter.com/alexj`,
+            linkedin: `https://linkedin.com/in/alexj`,
+            website: faker.internet.url(),
+        }
+    },
+    {
+        id: STUDENT_USER_ID,
+        name: 'Priya Sharma',
+        email: 'student@123',
+        role: 'student',
+        password: 'password123',
+        avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop&crop=face',
+        banner: 'https://images.unsplash.com/photo-1504805572947-34fad45aed93?w=800&h=300&fit=crop',
+        bio: 'Aspiring full-stack developer and design enthusiast. Passionate about building beautiful and functional web applications.',
+        usn: `1DA21CS123`,
+        branch: 'Computer Science',
+        contributionPoints: faker.number.int({ min: 50, max: 1000 }),
+        achievements: [allAchievements[0], allAchievements[1]],
+        interests: ['Technical', 'Arts', 'Design'],
+        certifications: [{id: 'cert-1', name: 'React Basics', issuer: 'Meta', date: '2023-05-20'}],
+    },
+    {
+        id: 'admin-user',
+        name: 'Admin User',
+        email: 'admin@school.edu',
+        role: 'admin',
+        password: 'password123',
+        avatar: faker.image.avatar(),
+        contributionPoints: 0,
+    },
+];
+
+const dynamicStudents: User[] = Array.from({ length: 15 }, () => {
   const contributionPoints = faker.number.int({ min: 50, max: 1000 });
   const achievements = [];
   if (contributionPoints > 100) achievements.push(allAchievements[0]);
   if (contributionPoints > 250) achievements.push(allAchievements[1]);
   if (contributionPoints > 750) achievements.push(allAchievements[2]);
 
-  const firstName = faker.person.firstName();
-  const lastName = faker.person.lastName();
-  const userName = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`;
-
   return {
     id: faker.string.uuid(),
-    name: `${firstName} ${lastName}`,
-    email: faker.internet.email({ firstName, lastName }),
-    role: isStudent ? 'student' : 'leader',
+    name: faker.person.fullName(),
+    email: faker.internet.email(),
+    role: 'student',
+    password: 'password123',
     avatar: faker.image.avatar(),
-    usn: isStudent ? `1DA${faker.number.int({min: 20, max: 23})}${faker.helpers.arrayElement(['CS', 'IS', 'EC', 'ME'])}${faker.number.int({min: 100, max: 199})}` : undefined,
-    branch: isStudent ? faker.helpers.arrayElement(['Computer Science', 'Information Science', 'Electronics', 'Mechanical']) : undefined,
+    banner: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=300&fit=crop',
+    bio: faker.lorem.sentence(),
+    usn: `1DA${faker.number.int({min: 20, max: 23})}${faker.helpers.arrayElement(['CS', 'IS', 'EC', 'ME'])}${faker.number.int({min: 100, max: 199})}`,
+    branch: faker.helpers.arrayElement(['Computer Science', 'Information Science', 'Electronics', 'Mechanical']),
     contact: faker.phone.number(),
-    interests: isStudent ? faker.helpers.arrayElements(['Technical', 'Arts', 'Public Speaking', 'Photography', 'Community Service'], {min: 2, max: 4}) : [],
-    certifications: isStudent ? Array.from({length: faker.number.int({min: 1, max: 3})}, () => ({
+    interests: faker.helpers.arrayElements(['Technical', 'Arts', 'Public Speaking', 'Photography', 'Community Service'], {min: 2, max: 4}),
+    certifications: Array.from({length: faker.number.int({min: 0, max: 2})}, () => ({
       id: faker.string.uuid(),
       name: `Certified ${faker.company.buzzNoun()} Professional`,
       issuer: faker.company.name(),
       date: faker.date.past({years: 2}).toLocaleDateString(),
-    })) : [],
+    })),
     contributionPoints,
     achievements,
-    socials: !isStudent ? {
-        twitter: `https://twitter.com/${userName}`,
-        linkedin: `https://linkedin.com/in/${userName}`,
-        website: faker.internet.url(),
-    } : undefined,
   }
 });
 
-mockUsers.push({
-    id: 'admin-user',
-    name: 'Admin User',
-    email: 'admin@school.edu',
-    role: 'admin',
-    avatar: faker.image.avatar(),
-    contributionPoints: 0,
-});
-
-export const mockStudentUser = mockUsers.find(u => u.role === 'student')!;
+export const mockUsers: User[] = [...staticUsers, ...dynamicStudents];
 
 export const mockClubs: Club[] = clubNames.map((name, index) => {
-  const leader = faker.helpers.arrayElement(mockUsers.filter(u => u.role === 'leader'));
+  // Assign the first two clubs to the main leader account, the rest to the showcase leaders
+  const leader = index < 2 ? mainLeader : requestedLeaders[index - 2];
   return {
     id: faker.string.uuid(),
     name,
@@ -131,6 +188,8 @@ export const mockClubs: Club[] = clubNames.map((name, index) => {
     tags: getClubTags(name),
     createdAt: faker.date.past().toISOString(),
     image: clubImages[index % clubImages.length],
+    bannerImage: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=300&fit=crop',
+    welcomeMessage: `Welcome to ${name}! We're excited to have you. Check out our upcoming events.`,
     socials: {
       twitter: `https://twitter.com/${name.replace(/[^a-zA-Z0-9]/g, '')}`,
       linkedin: `https://linkedin.com/company/${name.replace(/[^a-zA-Z0-9]/g, '')}`,
@@ -143,7 +202,6 @@ export const mockClubs: Club[] = clubNames.map((name, index) => {
 
 export const mockClubMembers: ClubMember[] = Array.from({ length: 50 }, (_, index) => {
   const user = faker.helpers.arrayElement(mockUsers.filter(u => u.role === 'student'));
-  // Create a few pending requests for testing
   const status = index < 5 ? 'pending' : faker.helpers.arrayElement(['active', 'inactive']);
   return {
     id: faker.string.uuid(),

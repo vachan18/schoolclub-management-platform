@@ -7,7 +7,7 @@ const languages = [
   { code: 'en', name: 'English' },
   { code: 'kn', name: 'ಕನ್ನಡ' },
   { code: 'te', name: 'తెలుగు' },
-  { code: 'ta', name: 'தமிழ்' },
+  // { code: 'ta', name: 'தமிழ்' }, // Removed as per request
   { code: 'ml', name: 'മലയാളം' },
   { code: 'fr', name: 'Français' },
 ];

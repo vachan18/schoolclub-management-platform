@@ -1,68 +1,59 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
-import { User as UserIcon, UploadCloud, Edit, Save, Mail, Phone, Hash, Briefcase, Award, Plus, Trash2, X, XCircle, Rocket, Star, Trophy, CalendarCheck } from 'lucide-react';
+import { User as UserIcon, UploadCloud, Edit, Save, Mail, Phone, Hash, Briefcase, Award, Plus, Trash2, X, Rocket, Star, Trophy, CalendarCheck, Users } from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
 import { useToast } from '../context/ToastContext';
-import { User, Achievement } from '../types';
-
-const SaveChangesBar: React.FC<{ onSave: () => void; onDiscard: () => void; }> = ({ onSave, onDiscard }) => (
-  <motion.div
-    initial={{ y: 100, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    exit={{ y: 100, opacity: 0 }}
-    className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-[150]"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">You have unsaved changes.</p>
-      <div className="flex space-x-3">
-        <button onClick={onDiscard} className="px-4 py-2 text-sm font-medium rounded-md bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center space-x-2">
-          <XCircle className="h-4 w-4" />
-          <span>Discard</span>
-        </button>
-        <button onClick={onSave} className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2">
-          <Save className="h-4 w-4" />
-          <span>Save Changes</span>
-        </button>
-      </div>
-    </div>
-  </motion.div>
-);
+import { User, Achievement, Club } from '../types';
 
 const iconMap: { [key: string]: React.ElementType } = {
     Rocket, Star, Trophy, CalendarCheck
 };
 
 const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
-    const { setUsers } = useUserData();
+    const { setUsers, clubs, clubMembers } = useUserData();
     const { showToast } = useToast();
-    const [originalProfile, setOriginalProfile] = useState<User>(() => JSON.parse(JSON.stringify(student)));
+    
     const [editedProfile, setEditedProfile] = useState<User>(() => JSON.parse(JSON.stringify(student)));
     const [isEditing, setIsEditing] = useState(false);
     const [newInterest, setNewInterest] = useState('');
     const [newCert, setNewCert] = useState({ name: '', issuer: '', date: '' });
 
     useEffect(() => {
-        setOriginalProfile(JSON.parse(JSON.stringify(student)));
         setEditedProfile(JSON.parse(JSON.stringify(student)));
     }, [student]);
 
-    const isDirty = useMemo(() => JSON.stringify(originalProfile) !== JSON.stringify(editedProfile), [originalProfile, editedProfile]);
+    const myClubs = useMemo(() => {
+        const memberOfClubIds = clubMembers
+            .filter(m => m.userId === student.id && m.status === 'active')
+            .map(m => m.clubId);
+        return clubs.filter(c => memberOfClubIds.includes(c.id));
+    }, [clubs, clubMembers, student.id]);
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
+    const onAvatarDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
-            const newAvatarUrl = URL.createObjectURL(acceptedFiles[0]);
-            setEditedProfile(p => ({ ...p, avatar: newAvatarUrl }));
+            const reader = new FileReader();
+            reader.onload = () => {
+                setEditedProfile(p => ({ ...p, avatar: reader.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
+        }
+    }, []);
+    
+    const onBannerDrop = useCallback((acceptedFiles: File[]) => {
+        if (acceptedFiles[0]) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setEditedProfile(p => ({ ...p, banner: reader.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
     }, []);
 
-    const { getRootProps, getInputProps } = useDropzone({
-        onDrop,
-        accept: { 'image/*': ['.jpeg', '.png', '.jpg'] },
-        multiple: false,
-    });
+    const { getRootProps: getAvatarRootProps, getInputProps: getAvatarInputProps } = useDropzone({ onDrop: onAvatarDrop, accept: { 'image/*': ['.jpeg', '.png', '.jpg'] }, multiple: false });
+    const { getRootProps: getBannerRootProps, getInputProps: getBannerInputProps } = useDropzone({ onDrop: onBannerDrop, accept: { 'image/*': ['.jpeg', '.png', '.jpg'] }, multiple: false });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setEditedProfile(p => ({ ...p, [e.target.name]: e.target.value }));
     };
 
@@ -90,24 +81,13 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
 
     const handleSave = () => {
         setUsers(prevUsers => prevUsers.map(u => u.id === editedProfile.id ? editedProfile : u));
-        setOriginalProfile(editedProfile);
         setIsEditing(false);
         showToast("Profile saved successfully!");
     };
 
     const handleDiscard = () => {
-        setEditedProfile(originalProfile);
+        setEditedProfile(student);
         setIsEditing(false);
-    };
-
-    const handleToggleEdit = () => {
-        if (isEditing && isDirty) {
-            if (confirm("You have unsaved changes. Are you sure you want to discard them?")) {
-                handleDiscard();
-            }
-        } else {
-            setIsEditing(!isEditing);
-        }
     };
 
     const InfoField = ({ icon: Icon, label, value, name }: { icon: React.ElementType, label: string, value?: string, name: string }) => (
@@ -126,40 +106,108 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
 
     return (
         <div className="py-8">
-            <div className="relative bg-foreground dark:bg-foreground rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="absolute top-6 right-6 z-10">
-                    <button onClick={handleToggleEdit} className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-md">
-                        {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
-                        <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
-                    </button>
+            <div className="relative bg-foreground dark:bg-foreground rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                {/* Banner */}
+                <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
+                    {editedProfile.banner && <img src={editedProfile.banner} alt="Profile banner" className="w-full h-full object-cover" />}
+                    {isEditing && (
+                        <div {...getBannerRootProps()} className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
+                            <input {...getBannerInputProps()} />
+                            <UploadCloud className="h-8 w-8 text-white" />
+                            <span className="ml-2 text-white font-semibold">Change Banner</span>
+                        </div>
+                    )}
                 </div>
 
-                <div className="p-6 flex flex-col md:flex-row items-center gap-6">
-                    <div className="relative">
-                        <img src={editedProfile.avatar} alt={editedProfile.name} className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/50" />
-                        {isEditing && (
-                            <div {...getRootProps()} className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
-                                <input {...getInputProps()} />
-                                <UploadCloud className="h-8 w-8 text-white" />
-                            </div>
-                        )}
+                {/* Profile Header */}
+                <div className="p-6">
+                    <div className="flex flex-col md:flex-row items-center md:items-end -mt-20 md:-mt-24 relative">
+                        <div className="relative">
+                            <img src={editedProfile.avatar} alt={editedProfile.name} className="h-32 w-32 rounded-full object-cover ring-4 ring-white dark:ring-gray-800" />
+                            {isEditing && (
+                                <div {...getAvatarRootProps()} className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
+                                    <input {...getAvatarInputProps()} />
+                                    <UploadCloud className="h-8 w-8 text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-4 md:mt-0 md:ml-6 text-center md:text-left flex-grow">
+                            {isEditing ? (
+                                <input type="text" name="name" value={editedProfile.name} onChange={handleInputChange} className="text-3xl font-bold text-gray-900 dark:text-white bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500" />
+                            ) : (
+                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{editedProfile.name}</h1>
+                            )}
+                            <p className="text-primary font-medium capitalize">{editedProfile.role}</p>
+                        </div>
+                        <div className="mt-4 md:mt-0">
+                            {!isEditing ? (
+                                <button onClick={() => setIsEditing(true)} className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-md">
+                                    <Edit className="h-5 w-5" />
+                                    <span>Edit Profile</span>
+                                </button>
+                            ) : (
+                                <div className="flex space-x-2">
+                                    <button onClick={handleDiscard} className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md">
+                                        <X className="h-5 w-5" />
+                                        <span>Cancel</span>
+                                    </button>
+                                    <button onClick={handleSave} className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md">
+                                        <Save className="h-5 w-5" />
+                                        <span>Save</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="text-center md:text-left">
+
+                    <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Bio</h3>
                         {isEditing ? (
-                            <input type="text" name="name" value={editedProfile.name} onChange={handleInputChange} className="text-3xl font-bold text-gray-900 dark:text-white bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500" />
+                             <textarea name="bio" value={editedProfile.bio || ''} onChange={handleInputChange} className="text-sm bg-transparent border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 w-full rounded-md p-2" rows={3}/>
                         ) : (
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{editedProfile.name}</h1>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{editedProfile.bio || 'No bio set. Click "Edit Profile" to add one!'}</p>
                         )}
-                        <p className="text-primary font-medium capitalize">{editedProfile.role}</p>
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-t border-gray-200 dark:border-gray-700">
+                    <div className="p-4 text-center">
+                        <p className="text-2xl font-bold text-primary">{editedProfile.contributionPoints}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Contribution Points</p>
+                    </div>
+                    <div className="p-4 text-center">
+                        <p className="text-2xl font-bold text-primary">{myClubs.length}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Clubs Joined</p>
+                    </div>
+                     <div className="p-4 text-center">
+                        <p className="text-2xl font-bold text-primary">{editedProfile.achievements?.length || 0}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Achievements</p>
+                    </div>
+                </div>
+                
                 <div className="p-6 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InfoField icon={Mail} label="Email" value={editedProfile.email} name="email" />
                     <InfoField icon={Phone} label="Contact" value={editedProfile.contact} name="contact" />
                     <InfoField icon={Hash} label="USN" value={editedProfile.usn} name="usn" />
                     <InfoField icon={Briefcase} label="Branch" value={editedProfile.branch} name="branch" />
                 </div>
+
+                {myClubs.length > 0 && (
+                    <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/> My Clubs</h3>
+                        <div className="flex flex-wrap gap-4">
+                            {myClubs.map(club => (
+                                <div key={club.id} className="flex items-center space-x-3 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                                    <img src={club.logoUrl} alt={club.name} className="h-10 w-10 rounded-full object-cover" />
+                                    <div>
+                                        <p className="font-semibold text-gray-800 dark:text-gray-100">{club.name}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{club.category}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 
                 <div className="p-6 border-t border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Interests</h3>
@@ -194,6 +242,9 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
                                 {isEditing && <button onClick={() => handleRemoveCert(cert.id)} className="p-1 text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>}
                             </div>
                         ))}
+                         {editedProfile.certifications?.length === 0 && !isEditing && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No certifications added yet.</p>
+                        )}
                     </div>
                     {isEditing && (
                         <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
@@ -220,12 +271,12 @@ const StudentProfile: React.FC<{ student: User }> = ({ student }) => {
                                 </div>
                             );
                         })}
+                        {editedProfile.achievements?.length === 0 && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 col-span-full text-center">No achievements unlocked yet. Keep participating!</p>
+                        )}
                     </div>
                 </div>
             </div>
-            <AnimatePresence>
-                {isDirty && isEditing && <SaveChangesBar onSave={handleSave} onDiscard={handleDiscard} />}
-            </AnimatePresence>
         </div>
     );
 };

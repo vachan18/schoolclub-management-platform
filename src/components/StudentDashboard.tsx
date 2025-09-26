@@ -12,11 +12,12 @@ import RecommendedClubs from './RecommendedClubs';
 import Leaderboards from './Leaderboards';
 import OnboardingModal from './OnboardingModal';
 import { ClubMember } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 const categories = ['All', 'Technical', 'Cultural', 'Arts', 'Community Service', 'Special Interest', 'Sports'];
 
 const ClubExplorer: React.FC = () => {
-    const { clubs, users, clubMembers, setClubMembers } = useUserData();
+    const { clubs, currentUser, clubMembers, setClubMembers } = useUserData();
     const { setNotifications } = useAppData();
     const { showToast } = useToast();
     
@@ -25,7 +26,7 @@ const ClubExplorer: React.FC = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
-    const studentUser = users.find(u => u.role === 'student');
+    const studentUser = currentUser;
 
     const filteredClubs = clubs
         .filter(club => {
@@ -59,7 +60,6 @@ const ClubExplorer: React.FC = () => {
         setClubMembers(prev => [...prev, newRequest]);
         showToast(`Your request to join ${club.name} has been sent!`, 'success');
         
-        // Notify the club leader (in a real app, this would be targeted)
         setNotifications(prev => [{
             id: crypto.randomUUID(),
             content: `${studentUser.name} has requested to join ${club.name}.`,
@@ -124,8 +124,8 @@ const ClubExplorer: React.FC = () => {
 }
 
 const StudentDashboard: React.FC = () => {
-    const { users } = useUserData();
-    const studentUser = users.find(u => u.role === 'student');
+    const { currentUser } = useUserData();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'profile' | 'explore' | 'leaderboards'>('profile');
     const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -141,8 +141,18 @@ const StudentDashboard: React.FC = () => {
         setShowOnboarding(false);
     };
 
-    if (!studentUser) {
-        return <div>Loading student profile...</div>
+    const studentUser = currentUser;
+
+    useEffect(() => {
+        if (!studentUser || studentUser.role !== 'student') {
+            // If there's no valid student user, redirect to login.
+            // This can happen on page refresh if session is lost.
+            setTimeout(() => navigate('/student-login'), 100);
+        }
+    }, [studentUser, navigate]);
+
+    if (!studentUser || studentUser.role !== 'student') {
+        return <div className="w-full h-screen flex items-center justify-center">Redirecting to login...</div>;
     }
 
     return (

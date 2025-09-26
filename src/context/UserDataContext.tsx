@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Club, User, ClubMember, Announcement, MeetingSchedule } from '../types';
 import { mockClubs, mockUsers, mockClubMembers, mockAnnouncements, mockMeetingSchedules } from '../data/mockData';
 
@@ -17,14 +17,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T | ((va
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      // Filter out blob URLs before saving to localStorage
-      const replacer = (key: string, value: any) => {
-        if (typeof value === 'string' && value.startsWith('blob:')) {
-          return undefined; // Exclude blob URLs from serialization
-        }
-        return value;
-      };
-      window.localStorage.setItem(key, JSON.stringify(valueToStore, replacer));
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
         console.warn(`LocalStorage quota exceeded for key "${key}". Data will not be persisted for this session. Please connect a backend for permanent storage.`);
@@ -48,19 +41,61 @@ interface UserDataContextType {
   setAnnouncements: (announcements: Announcement[] | ((val: Announcement[]) => Announcement[])) => void;
   meetings: MeetingSchedule[];
   setMeetings: (meetings: MeetingSchedule[] | ((val: MeetingSchedule[]) => MeetingSchedule[])) => void;
+  currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
 export const UserDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useLocalStorage<User[]>('users', mockUsers);
-  const [clubs, setClubs] = useLocalStorage<Club[]>('clubs', mockClubs);
-  const [clubMembers, setClubMembers] = useLocalStorage<ClubMember[]>('clubMembers', mockClubMembers);
-  const [announcements, setAnnouncements] = useLocalStorage<Announcement[]>('announcements', mockAnnouncements);
-  const [meetings, setMeetings] = useLocalStorage<MeetingSchedule[]>('meetings', mockMeetingSchedules);
+  const [users, setUsers] = useLocalStorage<User[]>('users', []);
+  const [clubs, setClubs] = useLocalStorage<Club[]>('clubs', []);
+  const [clubMembers, setClubMembers] = useLocalStorage<ClubMember[]>('clubMembers', []);
+  const [announcements, setAnnouncements] = useLocalStorage<Announcement[]>('announcements', []);
+  const [meetings, setMeetings] = useLocalStorage<MeetingSchedule[]>('meetings', []);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // This effect runs once on mount to seed data only if localStorage is empty.
+    // This is non-destructive and preserves user edits.
+    const isSeeded = localStorage.getItem('isUserDataSeeded_v2');
+    if (!isSeeded) {
+      const areUsersEmpty = JSON.parse(localStorage.getItem('users') || '[]').length === 0;
+      if (areUsersEmpty) {
+        setUsers(mockUsers);
+        setClubs(mockClubs);
+        setClubMembers(mockClubMembers);
+        setAnnouncements(mockAnnouncements);
+        setMeetings(mockMeetingSchedules);
+        console.log("User data seeded into localStorage because it was empty.");
+      }
+      localStorage.setItem('isUserDataSeeded_v2', 'true');
+    }
+  }, []); // Empty dependency array ensures it runs only once.
+
+
+  useEffect(() => {
+    const userId = sessionStorage.getItem('currentUserId');
+    if (userId && users.length > 0) {
+        const user = users.find(u => u.id === userId);
+        if (user) setCurrentUser(user);
+    }
+  }, [users]);
+
+  const handleSetCurrentUser = (user: User | null) => {
+    setCurrentUser(user);
+    if (user) {
+        sessionStorage.setItem('currentUserId', user.id);
+    } else {
+        sessionStorage.removeItem('currentUserId');
+        sessionStorage.removeItem('studentIsAuthenticated');
+        sessionStorage.removeItem('leaderIsAuthenticated');
+        sessionStorage.removeItem('adminIsAuthenticated');
+    }
+  };
 
   return (
-    <UserDataContext.Provider value={{ users, setUsers, clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings }}>
+    <UserDataContext.Provider value={{ users, setUsers, clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, currentUser, setCurrentUser: handleSetCurrentUser }}>
       {children}
     </UserDataContext.Provider>
   );

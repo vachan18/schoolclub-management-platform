@@ -1,11 +1,11 @@
 {
   "hero": {
-    "title": "[ml] Build. Innovate. Lead.",
-    "subtitle": "[ml] The central hub for all student activities at Dr. AIT. Discover clubs, manage teams, and collaborate on groundbreaking projects."
+    "title": "നിർമ്മിക്കുക. നവീകരിക്കുക. നയിക്കുക.",
+    "subtitle": "ഡോ. എഐടി-യിലെ എല്ലാ വിദ്യാർത്ഥി പ്രവർത്തനങ്ങളുടെയും കേന്ദ്രം. ക്ലബ്ബുകൾ കണ്ടെത്തുക, ടീമുകളെ നിയന്ത്രിക്കുക, പുതിയ പ്രോജക്റ്റുകളിൽ സഹകരിക്കുക."
   },
   "roles": {
-    "student": "[ml] I'm a Student",
-    "leader": "[ml] I'm a Club Leader",
-    "admin": "[ml] Site Management"
+    "student": "ഞാനൊരു വിദ്യാർത്ഥിയാണ്",
+    "leader": "ഞാനൊരു ക്ലബ്ബ് നേതാവാണ്",
+    "admin": "സൈറ്റ് മാനേജ്മെന്റ്"
   }
 }

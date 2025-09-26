@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, User as UserIcon, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, User as UserIcon, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface StudentLoginProps {
@@ -75,7 +75,7 @@ const LoginForm: React.FC<{ onLogin: (email: string, password: string) => void; 
           <label className="block text-sm font-medium text-gray-300">Student Email</label>
           <div className="mt-1 relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-3 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500" placeholder="student@school.edu"/>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-3 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500" placeholder="student@123"/>
           </div>
         </div>
         <div>

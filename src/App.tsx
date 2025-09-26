@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const playLoginSound = useSoundEffect();
-  const { users, setUsers } = useUserData();
+  const { users, setUsers, setCurrentUser } = useUserData();
   const { showToast } = useToast();
 
   const handleRoleSelect = (role: 'student' | 'leader' | 'admin') => {
@@ -65,7 +65,8 @@ const AppContent: React.FC = () => {
 
   const handleStudentLogin = (email: string, password: string) => {
     const user = users.find(u => u.role === 'student' && u.email === email);
-    if (user && password === 'password123') { // Simplified password check
+    if (user && user.password === password) {
+      setCurrentUser(user);
       playLoginSound();
       studentAuth.login(() => navigate('/student'));
     } else {
@@ -83,6 +84,7 @@ const AppContent: React.FC = () => {
       id: crypto.randomUUID(),
       name,
       email,
+      password,
       role: 'student',
       avatar: `https://i.pravatar.cc/150?u=${email}`,
       contributionPoints: 0,
@@ -91,30 +93,36 @@ const AppContent: React.FC = () => {
       certifications: [],
     };
     setUsers(prev => [...prev, newUser]);
+    setCurrentUser(newUser);
     showToast(`Welcome, ${name}! Your account has been created.`, 'success');
     playLoginSound();
     studentAuth.login(() => navigate('/student'));
   };
 
   const handleLeaderLogin = (email: string, password: string) => {
-    if (email === 'leader@school.edu' && password === 'password123') {
+    const user = users.find(u => u.role === 'leader' && u.email === email);
+    if (user && user.password === password) {
+      setCurrentUser(user);
       playLoginSound();
       leaderAuth.login(() => navigate('/leader-dashboard'));
     } else {
-      alert('Invalid credentials. Please use: leader@school.edu / password123');
+      alert('Invalid credentials. Please check your email and password.');
     }
   };
   
   const handleAdminLogin = (email: string, password: string) => {
-    if (email === 'admin@school.edu' && password === 'password123') {
+    const user = users.find(u => u.role === 'admin' && u.email === email);
+    if (user && user.password === password) {
+      setCurrentUser(user);
       playLoginSound();
       adminAuth.login(() => navigate('/admin-dashboard'));
     } else {
-      alert('Invalid credentials. Please use: admin@school.edu / password123');
+      alert('Invalid credentials. Please check your email and password.');
     }
   };
 
   const handleBackToHome = () => {
+    setCurrentUser(null);
     if (studentAuth.isAuthenticated) {
       studentAuth.logout(() => navigate('/'));
     } else if (leaderAuth.isAuthenticated) {

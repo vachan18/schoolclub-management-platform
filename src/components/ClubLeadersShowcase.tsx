@@ -8,6 +8,11 @@ const ClubLeadersShowcase: React.FC = () => {
     const { clubs, users } = useUserData();
     const [selectedLeader, setSelectedLeader] = useState<{ user: User, club: Club } | null>(null);
 
+    const leaderNamesToShow = ['Chinmay', 'Sumant', 'Rahul', 'Nandana', 'Anita', 'Rosie'];
+    
+    // Filter clubs to only include those led by the specified leaders
+    const showcasedClubs = clubs.filter(club => leaderNamesToShow.includes(club.leaderName));
+
     const handleLeaderClick = (club: Club) => {
         const leaderUser = users.find(u => u.id === club.leaderId);
         if (leaderUser) {
@@ -45,7 +50,7 @@ const ClubLeadersShowcase: React.FC = () => {
                     viewport={{ once: true, amount: 0.2 }}
                     className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8"
                 >
-                    {clubs.map(club => (
+                    {showcasedClubs.map(club => (
                         <motion.div 
                             key={club.id} 
                             variants={itemVariants}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Users, Calendar, Bell, Settings, Edit3, Trash2, Moon, Sun, Save, XCircle, Twitter, Linkedin, Globe, Image as ImageIcon, User, UploadCloud, Check, X, MailOpen } from 'lucide-react';
+import { Plus, Users, Calendar, Bell, Settings, Edit3, Trash2, Moon, Sun, Save, XCircle, Twitter, Linkedin, Globe, Image as ImageIcon, User, UploadCloud, Check, X, MailOpen, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { useUserData } from '../context/UserDataContext';
@@ -13,42 +13,36 @@ import AnnouncementModal from './AnnouncementModal';
 import MeetingModal from './MeetingModal';
 import ClubAnalytics from './ClubAnalytics';
 import { useTheme } from '../context/ThemeContext';
-
-const SaveChangesBar: React.FC<{ onSave: () => void; onDiscard: () => void; }> = ({ onSave, onDiscard }) => (
-  <motion.div
-    initial={{ y: 100, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    exit={{ y: 100, opacity: 0 }}
-    className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-[150]"
-  >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">You have unsaved changes.</p>
-      <div className="flex space-x-3">
-        <button onClick={onDiscard} className="px-4 py-2 text-sm font-medium rounded-md bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center space-x-2">
-          <XCircle className="h-4 w-4" />
-          <span>Discard</span>
-        </button>
-        <button onClick={onSave} className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2">
-          <Save className="h-4 w-4" />
-          <span>Save Changes</span>
-        </button>
-      </div>
-    </div>
-  </motion.div>
-);
+import { useNavigate } from 'react-router-dom';
 
 const LeaderDashboard: React.FC = () => {
-  const { clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, users } = useUserData();
+  const { clubs, setClubs, clubMembers, setClubMembers, announcements, setAnnouncements, meetings, setMeetings, users, currentUser } = useUserData();
   const { setNotifications } = useAppData();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   
-  const leaderClubs = useMemo(() => clubs, [clubs]);
+  const leaderClubs = useMemo(() => {
+    if (currentUser && currentUser.role === 'leader') {
+      return clubs.filter(club => club.leaderId === currentUser.id);
+    }
+    return [];
+  }, [clubs, currentUser]);
   
-  const [selectedClubId, setSelectedClubId] = useState<string>(leaderClubs[0]?.id || '');
+  const [selectedClubId, setSelectedClubId] = useState<string>('');
   const [selectedTab, setSelectedTab] = useState('overview');
 
-  const [originalData, setOriginalData] = useState<any>(null);
-  const [editedData, setEditedData] = useState<any>(null);
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'leader') {
+        setTimeout(() => navigate('/leader-login'), 100);
+    } else if (leaderClubs.length > 0 && !selectedClubId) {
+        setSelectedClubId(leaderClubs[0].id);
+    }
+  }, [currentUser, leaderClubs, selectedClubId, navigate]);
+
+  const currentClub = useMemo(() => clubs.find(c => c.id === selectedClubId), [clubs, selectedClubId]);
+  const currentMembers = useMemo(() => clubMembers.filter(m => m.clubId === selectedClubId), [clubMembers, selectedClubId]);
+  const currentAnnouncements = useMemo(() => announcements.filter(a => a.clubId === selectedClubId).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [announcements, selectedClubId]);
+  const currentMeetings = useMemo(() => meetings.filter(m => m.clubId === selectedClubId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [meetings, selectedClubId]);
 
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -60,68 +54,43 @@ const LeaderDashboard: React.FC = () => {
   const [editingMeeting, setEditingMeeting] = useState<MeetingSchedule | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'member' | 'announcement' | 'meeting' } | null>(null);
 
-  useEffect(() => {
-    if (!selectedClubId) return;
-    const club = clubs.find(c => c.id === selectedClubId)!;
-    const data = {
-      clubDetails: { ...club },
-      members: clubMembers.filter(m => m.clubId === selectedClubId),
-      announcements: announcements.filter(a => a.clubId === selectedClubId).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-      meetings: meetings.filter(m => m.clubId === selectedClubId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    };
-    setOriginalData(JSON.parse(JSON.stringify(data)));
-    setEditedData(JSON.parse(JSON.stringify(data)));
-  }, [selectedClubId, clubs, clubMembers, announcements, meetings]);
-
-  const isDirty = useMemo(() => JSON.stringify(originalData) !== JSON.stringify(editedData), [originalData, editedData]);
-
-  const handleSaveAll = () => {
-    if (!editedData) return;
-    setClubs(prevClubs => prevClubs.map(c => c.id === selectedClubId ? editedData.clubDetails : c));
-    setClubMembers(prev => [...prev.filter(m => m.clubId !== selectedClubId), ...editedData.members]);
-    setAnnouncements(prev => [...prev.filter(a => a.clubId !== selectedClubId), ...editedData.announcements]);
-    setMeetings(prev => [...prev.filter(m => m.clubId !== selectedClubId), ...editedData.meetings]);
-    
-    setOriginalData(JSON.parse(JSON.stringify(editedData)));
-    showToast('All changes saved successfully!');
-  };
-
-  const handleDiscardAll = () => setEditedData(JSON.parse(JSON.stringify(originalData)));
-
   const handleSaveMember = (memberData: ClubMember) => {
-    setEditedData((prev: any) => {
-        const existing = prev.members.find((m: ClubMember) => m.id === memberData.id);
-        const members = existing 
-            ? prev.members.map((m: ClubMember) => m.id === memberData.id ? memberData : m)
-            : [{ ...memberData, clubId: selectedClubId }, ...prev.members];
-        return { ...prev, members };
+    setClubMembers(prev => {
+        const existing = prev.find((m: ClubMember) => m.id === memberData.id);
+        if (existing) {
+            return prev.map((m: ClubMember) => m.id === memberData.id ? memberData : m);
+        }
+        return [{ ...memberData, clubId: selectedClubId }, ...prev];
     });
     setIsMemberModalOpen(false);
     setEditingMember(null);
+    showToast("Member saved permanently!");
   };
   
   const handleSaveAnnouncement = (announcementData: Announcement) => {
-    setEditedData((prev: any) => {
-      const existing = prev.announcements.find((a: Announcement) => a.id === announcementData.id);
-      const announcements = existing
-        ? prev.announcements.map((a: Announcement) => a.id === announcementData.id ? announcementData : a)
-        : [{ ...announcementData, clubId: selectedClubId }, ...prev.announcements];
-      return { ...prev, announcements: announcements.sort((a:Announcement,b:Announcement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) };
+    setAnnouncements(prev => {
+      const existing = prev.find((a: Announcement) => a.id === announcementData.id);
+      if (existing) {
+        return prev.map((a: Announcement) => a.id === announcementData.id ? announcementData : a);
+      }
+      return [{ ...announcementData, clubId: selectedClubId }, ...prev];
     });
     setIsAnnouncementModalOpen(false);
     setEditingAnnouncement(null);
+    showToast("Announcement saved permanently!");
   };
 
   const handleSaveMeeting = (meetingData: MeetingSchedule) => {
-    setEditedData((prev: any) => {
-      const existing = prev.meetings.find((m: MeetingSchedule) => m.id === meetingData.id);
-      const meetings = existing
-        ? prev.meetings.map((m: MeetingSchedule) => m.id === meetingData.id ? meetingData : m)
-        : [{ ...meetingData, clubId: selectedClubId }, ...prev.meetings];
-      return { ...prev, meetings: meetings.sort((a:MeetingSchedule,b:MeetingSchedule) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
+    setMeetings(prev => {
+      const existing = prev.find((m: MeetingSchedule) => m.id === meetingData.id);
+      if (existing) {
+        return prev.map((m: MeetingSchedule) => m.id === meetingData.id ? meetingData : m)
+      }
+      return [{ ...meetingData, clubId: selectedClubId }, ...prev];
     });
     setIsMeetingModalOpen(false);
     setEditingMeeting(null);
+    showToast("Meeting saved permanently!");
   };
 
   const openDeleteModal = (id: string, type: 'member' | 'announcement' | 'meeting') => {
@@ -130,30 +99,26 @@ const LeaderDashboard: React.FC = () => {
   };
 
   const handleConfirmDelete = () => {
-    if (!itemToDelete || !editedData) return;
+    if (!itemToDelete) return;
     const { id, type } = itemToDelete;
-    setEditedData((prev: any) => {
-        const updatedData = { ...prev };
-        if (type === 'member') updatedData.members = prev.members.filter((m: ClubMember) => m.id !== id);
-        if (type === 'announcement') updatedData.announcements = prev.announcements.filter((a: Announcement) => a.id !== id);
-        if (type === 'meeting') updatedData.meetings = prev.meetings.filter((m: MeetingSchedule) => m.id !== id);
-        return updatedData;
-    });
+    
+    if (type === 'member') setClubMembers(prev => prev.filter((m: ClubMember) => m.id !== id));
+    if (type === 'announcement') setAnnouncements(prev => prev.filter((a: Announcement) => a.id !== id));
+    if (type === 'meeting') setMeetings(prev => prev.filter((m: MeetingSchedule) => m.id !== id));
+    
+    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted permanently.`);
     setIsDeleteModalOpen(false);
     setItemToDelete(null);
   };
   
   const handleAcceptRequest = (memberId: string) => {
-    setEditedData((prev: any) => ({
-      ...prev,
-      members: prev.members.map((m: ClubMember) => m.id === memberId ? { ...m, status: 'active' } : m)
-    }));
-    const member = editedData.members.find((m: ClubMember) => m.id === memberId);
-    if(member) {
+    setClubMembers(prev => prev.map((m: ClubMember) => m.id === memberId ? { ...m, status: 'active' } : m));
+    const member = currentMembers.find((m: ClubMember) => m.id === memberId);
+    if(member && currentClub) {
       showToast(`${member.userName} accepted into the club.`, 'success');
       setNotifications(prev => [{
         id: crypto.randomUUID(),
-        content: `Your request to join "${editedData.clubDetails.name}" has been approved!`,
+        content: `Your request to join "${currentClub.name}" has been approved!`,
         createdAt: new Date().toISOString(),
         read: false
       }, ...prev]);
@@ -161,23 +126,20 @@ const LeaderDashboard: React.FC = () => {
   };
 
   const handleDeclineRequest = (memberId: string) => {
-    const member = editedData.members.find((m: ClubMember) => m.id === memberId);
-    setEditedData((prev: any) => ({
-      ...prev,
-      members: prev.members.filter((m: ClubMember) => m.id !== memberId)
-    }));
-    if(member) {
+    const member = currentMembers.find((m: ClubMember) => m.id === memberId);
+    setClubMembers(prev => prev.filter((m: ClubMember) => m.id !== memberId));
+    if(member && currentClub) {
       showToast(`${member.userName}'s request has been declined.`, 'info');
       setNotifications(prev => [{
         id: crypto.randomUUID(),
-        content: `Your request to join "${editedData.clubDetails.name}" has been declined.`,
+        content: `Your request to join "${currentClub.name}" has been declined.`,
         createdAt: new Date().toISOString(),
         read: false
       }, ...prev]);
     }
   };
 
-  const pendingRequestCount = editedData?.members.filter((m: ClubMember) => m.status === 'pending').length || 0;
+  const pendingRequestCount = currentMembers.filter((m: ClubMember) => m.status === 'pending').length;
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Users },
@@ -189,17 +151,15 @@ const LeaderDashboard: React.FC = () => {
   ];
 
   const renderContent = () => {
-    if (!editedData) return <div className="p-6 text-center">Loading club data...</div>;
-
-    const { members, announcements, meetings } = editedData;
+    if (!currentClub) return <div className="p-6 text-center">Loading club data...</div>;
 
     switch (selectedTab) {
-      case 'overview': return <ClubAnalytics members={members} meetings={meetings} />;
-      case 'requests': return <RequestsTab members={members} onAccept={handleAcceptRequest} onDecline={handleDeclineRequest} />;
+      case 'overview': return <ClubAnalytics members={currentMembers} meetings={currentMeetings} />;
+      case 'requests': return <RequestsTab members={currentMembers} onAccept={handleAcceptRequest} onDecline={handleDeclineRequest} />;
       case 'members': return (
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Members ({members.filter((m: ClubMember) => m.status === 'active').length})</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Members ({currentMembers.filter((m: ClubMember) => m.status === 'active').length})</h2>
             <button onClick={() => { setEditingMember(null); setIsMemberModalOpen(true); }} className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               <Plus className="h-4 w-4" /><span>Add Member</span>
             </button>
@@ -215,7 +175,7 @@ const LeaderDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {members.filter((m: ClubMember) => m.status === 'active').map((member: ClubMember) => (
+                {currentMembers.filter((m: ClubMember) => m.status === 'active').map((member: ClubMember) => (
                   <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{member.userName}</td>
                     <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{member.userEmail}</td>
@@ -242,7 +202,7 @@ const LeaderDashboard: React.FC = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {announcements.map((ann: Announcement) => (
+            {currentAnnouncements.map((ann: Announcement) => (
               <div key={ann.id} className="p-4 border dark:border-gray-700 rounded-lg flex justify-between items-start bg-white dark:bg-gray-800">
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">{ann.title}</p>
@@ -270,7 +230,7 @@ const LeaderDashboard: React.FC = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {meetings.map((meet: MeetingSchedule) => (
+            {currentMeetings.map((meet: MeetingSchedule) => (
               <div key={meet.id} className="p-4 border dark:border-gray-700 rounded-lg flex justify-between items-start bg-white dark:bg-gray-800">
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">{meet.title} <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full ml-2 capitalize">{meet.type}</span></p>
@@ -286,23 +246,22 @@ const LeaderDashboard: React.FC = () => {
           </div>
         </div>
       );
-      case 'settings': return <SettingsTab editedData={editedData} setEditedData={setEditedData} leaders={users.filter(u => u.role === 'leader')} />;
+      case 'settings': return <SettingsTab club={currentClub} setClubs={setClubs} leaders={users.filter(u => u.role === 'leader')} />;
       default: return null;
     }
   };
 
-  if (!selectedClubId && leaderClubs.length > 0) {
-    setSelectedClubId(leaderClubs[0].id);
-    return null;
+  if (!currentUser || currentUser.role !== 'leader') {
+    return <div className="w-full h-screen flex items-center justify-center">Redirecting to login...</div>;
   }
 
   if (leaderClubs.length === 0) {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Header userRole="leader" />
+            <Header userRole="leader" userName={currentUser.name} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
                 <h2 className="text-2xl font-bold">No Clubs Found</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">You are not assigned as a leader to any club.</p>
+                <p className="mt-2 text-gray-600 dark:text-gray-400">You are not currently assigned as a leader to any club.</p>
             </div>
         </div>
     )
@@ -310,7 +269,7 @@ const LeaderDashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header userRole="leader" userName={editedData?.clubDetails.leaderName} />
+      <Header userRole="leader" userName={currentUser.name} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -347,10 +306,6 @@ const LeaderDashboard: React.FC = () => {
           </motion.div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {isDirty && <SaveChangesBar onSave={handleSaveAll} onDiscard={handleDiscardAll} />}
-      </AnimatePresence>
 
       <MemberModal isOpen={isMemberModalOpen} onClose={() => setIsMemberModalOpen(false)} onSave={handleSaveMember} memberToEdit={editingMember}/>
       <AnnouncementModal isOpen={isAnnouncementModalOpen} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} announcementToEdit={editingAnnouncement}/>
@@ -403,64 +358,50 @@ const RequestsTab: React.FC<{
   );
 };
 
-const SettingsTab: React.FC<{ editedData: any, setEditedData: React.Dispatch<React.SetStateAction<any>>, leaders: UserType[] }> = ({ editedData, setEditedData, leaders }) => {
+const SettingsTab: React.FC<{ club: Club, setClubs: (value: Club[] | ((val: Club[]) => Club[])) => void, leaders: UserType[] }> = ({ club, setClubs, leaders }) => {
     const { theme, toggleTheme } = useTheme();
+    const { showToast } = useToast();
+    const [editedClub, setEditedClub] = useState(club);
+
+    useEffect(() => {
+        setEditedClub(club);
+    }, [club]);
 
     const handleClubDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         
         if (name === 'leaderId') {
             const leader = leaders.find(u => u.id === value);
-            setEditedData((prev: any) => ({
-                ...prev,
-                clubDetails: { 
-                    ...prev.clubDetails, 
-                    leaderId: value,
-                    leaderName: leader?.name || '', 
-                    leaderAvatar: leader?.avatar || '' 
-                }
-            }));
+            setEditedClub(prev => ({ ...prev, leaderId: value, leaderName: leader?.name || '', leaderAvatar: leader?.avatar || '' }));
         } else {
-            setEditedData((prev: any) => ({
-                ...prev,
-                clubDetails: { ...prev.clubDetails, [name]: value }
-            }));
+            setEditedClub(prev => ({ ...prev, [name]: value }));
         }
     };
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        const file = acceptedFiles[0];
-        if (file) {
-            const newAvatarUrl = URL.createObjectURL(file);
-            setEditedData((prev: any) => ({
-                ...prev,
-                clubDetails: { ...prev.clubDetails, leaderAvatar: newAvatarUrl }
-            }));
+    const onBannerDrop = useCallback((acceptedFiles: File[]) => {
+        if (acceptedFiles[0]) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setEditedClub(p => ({ ...p, bannerImage: reader.result as string }));
+            };
+            reader.readAsDataURL(acceptedFiles[0]);
         }
-    }, [setEditedData]);
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.gif'] },
-        multiple: false,
-    });
+    }, []);
+    const { getRootProps: getBannerRootProps, getInputProps: getBannerInputProps } = useDropzone({ onDrop: onBannerDrop, accept: { 'image/*': [] }, multiple: false });
 
     const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setEditedData((prev: any) => ({
-            ...prev,
-            clubDetails: { ...prev.clubDetails, socials: { ...prev.clubDetails.socials, [name]: value } }
-        }));
+        setEditedClub(prev => ({ ...prev, socials: { ...prev.socials, [name]: value } }));
     };
 
     const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEditedData((prev: any) => ({
-            ...prev,
-            clubDetails: { ...prev.clubDetails, isRecruiting: e.target.checked }
-        }));
+        setEditedClub(prev => ({ ...prev, isRecruiting: e.target.checked }));
     };
 
-    const { clubDetails } = editedData;
+    const handleSaveChanges = () => {
+        setClubs(prevClubs => prevClubs.map(c => c.id === editedClub.id ? editedClub : c));
+        showToast("Club settings saved permanently!");
+    };
 
     return (
         <div className="p-6 space-y-12">
@@ -469,16 +410,20 @@ const SettingsTab: React.FC<{ editedData: any, setEditedData: React.Dispatch<Rea
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Club Name</label>
-                        <input type="text" name="name" value={clubDetails.name} onChange={handleClubDetailsChange} className="mt-1 px-3 py-2 input-style"/>
+                        <input type="text" name="name" value={editedClub.name} onChange={handleClubDetailsChange} className="mt-1 px-3 py-2 input-style"/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                        <textarea name="description" value={clubDetails.description} onChange={handleClubDetailsChange} rows={3} className="mt-1 px-3 py-2 input-style"/>
+                        <textarea name="description" value={editedClub.description} onChange={handleClubDetailsChange} rows={3} className="mt-1 px-3 py-2 input-style"/>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Welcome Message for New Members</label>
+                        <textarea name="welcomeMessage" value={editedClub.welcomeMessage || ''} onChange={handleClubDetailsChange} rows={3} className="mt-1 px-3 py-2 input-style" placeholder="e.g., Welcome to the club! We're excited to have you."/>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Recruiting new members</span>
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="isRecruiting" checked={clubDetails.isRecruiting} onChange={handleToggleChange} className="sr-only peer"/>
+                            <input type="checkbox" name="isRecruiting" checked={editedClub.isRecruiting} onChange={handleToggleChange} className="sr-only peer"/>
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -486,71 +431,39 @@ const SettingsTab: React.FC<{ editedData: any, setEditedData: React.Dispatch<Rea
             </div>
 
             <div className="max-w-2xl">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Leader & Profile</h3>
-                 <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Appearance & Socials</h3>
+                <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Club Leader</label>
-                        <select name="leaderId" value={clubDetails.leaderId} onChange={handleClubDetailsChange} className="mt-1 px-3 py-2 input-style">
-                            {leaders.map(user => (
-                                <option key={user.id} value={user.id}>{user.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Leader Name</label>
-                        <input type="text" name="leaderName" value={clubDetails.leaderName} onChange={handleClubDetailsChange} className="mt-1 px-3 py-2 input-style"/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Leader Profile Picture</label>
-                        <div className="mt-2 flex items-center space-x-4">
-                            {clubDetails.leaderAvatar ? (
-                                <img src={clubDetails.leaderAvatar} alt={clubDetails.leaderName} className="h-20 w-20 rounded-full object-cover"/>
-                            ) : (
-                                <div className="h-20 w-20 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                    <User className="h-10 w-10 text-gray-500" />
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Club Banner Image</label>
+                        <div {...getBannerRootProps()} className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md cursor-pointer">
+                            <div className="space-y-1 text-center">
+                                {editedClub.bannerImage ? <img src={editedClub.bannerImage} alt="Banner preview" className="mx-auto h-24 rounded-md" /> : <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />}
+                                <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                                    <p className="pl-1">Upload a file or drag and drop</p>
                                 </div>
-                            )}
-                            <div {...getRootProps()} className={`flex-grow p-4 border-2 border-dashed rounded-lg cursor-pointer text-center ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'}`}>
-                                <input {...getInputProps()} />
-                                <UploadCloud className="mx-auto h-6 w-6 text-gray-400" />
-                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                    {isDragActive ? 'Drop the image here' : 'Drag & drop or click to upload'}
-                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF up to 10MB</p>
                             </div>
                         </div>
                     </div>
-                 </div>
-            </div>
-
-            <div className="max-w-2xl">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Appearance & Socials</h3>
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border dark:border-gray-700 rounded-lg">
-                        <div>
-                            <p className="font-medium text-gray-800 dark:text-gray-100">Theme</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Toggle between light and dark mode.</p>
-                        </div>
-                        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                            {theme === 'dark' ? <Sun className="text-yellow-400" /> : <Moon className="text-gray-600" />}
-                        </button>
-                    </div>
-                    <div className="relative">
-                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"/>
-                        <input type="text" name="logoUrl" value={clubDetails.logoUrl || ''} onChange={handleClubDetailsChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="Club Logo URL" />
-                    </div>
                     <div className="relative">
                         <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"/>
-                        <input type="text" name="website" value={clubDetails.socials?.website || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="Website URL" />
+                        <input type="text" name="website" value={editedClub.socials?.website || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="Website URL" />
                     </div>
                     <div className="relative">
                         <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"/>
-                        <input type="text" name="twitter" value={clubDetails.socials?.twitter || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="Twitter URL" />
+                        <input type="text" name="twitter" value={editedClub.socials?.twitter || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="Twitter URL" />
                     </div>
                     <div className="relative">
                         <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"/>
-                        <input type="text" name="linkedin" value={clubDetails.socials?.linkedin || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="LinkedIn URL" />
+                        <input type="text" name="linkedin" value={editedClub.socials?.linkedin || ''} onChange={handleSocialChange} className="w-full pl-10 px-3 py-2 input-style" placeholder="LinkedIn URL" />
                     </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end pt-6 border-t dark:border-gray-700">
+                <button onClick={handleSaveChanges} className="px-6 py-2.5 bg-blue-600 text-white rounded-md flex items-center space-x-2 shadow-lg hover:bg-blue-700 transition-colors">
+                    <Save className="h-5 w-5" /><span>Save All Settings</span>
+                </button>
             </div>
 
             <div className="max-w-2xl pt-8 border-t border-red-200 dark:border-red-900/50">

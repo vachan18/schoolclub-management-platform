@@ -14,6 +14,8 @@ export interface Club {
   tags: string[];
   createdAt: string;
   image?: string;
+  bannerImage?: string; // New
+  welcomeMessage?: string; // New
   socials?: {
     twitter?: string;
     linkedin?: string;
@@ -35,7 +37,10 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'leader' | 'admin';
+  password?: string; // NOTE: For demo purposes only. Do NOT store plain-text passwords in a real app.
   avatar?: string;
+  banner?: string; // New
+  bio?: string; // New
   usn?: string;
   branch?: string;
   contact?: string;
